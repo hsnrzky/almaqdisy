@@ -51,15 +51,15 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        navy: {
-          DEFAULT: "hsl(var(--navy))",
-          dark: "hsl(var(--navy-dark))",
-          light: "hsl(var(--navy-light))",
+        dark: {
+          DEFAULT: "hsl(var(--dark))",
+          deep: "hsl(var(--dark-deep))",
+          light: "hsl(var(--dark-light))",
         },
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          light: "hsl(var(--gold-light))",
-          dark: "hsl(var(--gold-dark))",
+        red: {
+          DEFAULT: "hsl(var(--red))",
+          light: "hsl(var(--red-light))",
+          dark: "hsl(var(--red-dark))",
         },
         cream: "hsl(var(--cream))",
         sidebar: {
@@ -111,9 +111,9 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
-        "pulse-gold": {
-          "0%, 100%": { boxShadow: "0 0 0 0 hsla(45, 65%, 53%, 0.4)" },
-          "50%": { boxShadow: "0 0 0 15px hsla(45, 65%, 53%, 0)" },
+        "pulse-red": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsla(0, 72%, 50%, 0.4)" },
+          "50%": { boxShadow: "0 0 0 15px hsla(0, 72%, 50%, 0)" },
         },
       },
       animation: {
@@ -125,11 +125,11 @@ export default {
         "slide-in-right": "slide-in-right 0.6s ease-out forwards",
         float: "float 3s ease-in-out infinite",
         shimmer: "shimmer 2s linear infinite",
-        "pulse-gold": "pulse-gold 2s ease-in-out infinite",
+        "pulse-red": "pulse-red 2s ease-in-out infinite",
       },
       backgroundImage: {
         "gradient-hero": "var(--gradient-hero)",
-        "gradient-gold": "var(--gradient-gold)",
+        "gradient-red": "var(--gradient-red)",
         "gradient-overlay": "var(--gradient-overlay)",
       },
     },
