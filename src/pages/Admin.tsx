@@ -8,9 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { User, Session } from "@supabase/supabase-js";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   LogOut,
   Plus,
   Trash2,
+  Pencil,
   Image as ImageIcon,
   ArrowDown,
   Home,
@@ -34,6 +41,13 @@ const Admin = () => {
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  
+  // Edit state
+  const [editingPhoto, setEditingPhoto] = useState<GalleryPhoto | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [updating, setUpdating] = useState(false);
+  
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -166,6 +180,48 @@ const Admin = () => {
     }
   };
 
+  const openEditDialog = (photo: GalleryPhoto) => {
+    setEditingPhoto(photo);
+    setEditTitle(photo.title);
+    setEditDescription(photo.description || "");
+  };
+
+  const closeEditDialog = () => {
+    setEditingPhoto(null);
+    setEditTitle("");
+    setEditDescription("");
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPhoto || !editTitle || !isAdmin) return;
+
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("gallery_photos")
+        .update({
+          title: editTitle,
+          description: editDescription || null,
+        })
+        .eq("id", editingPhoto.id);
+
+      if (error) throw error;
+
+      toast({ title: "Foto berhasil diperbarui!" });
+      closeEditDialog();
+      fetchPhotos();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const scrollToGallery = () => {
     navigate("/#galeri");
   };
@@ -294,12 +350,20 @@ const Admin = () => {
                           alt={photo.title}
                           className="w-full h-full object-cover"
                         />
-                        <button
-                          onClick={() => handleDelete(photo.id, photo.image_url)}
-                          className="absolute top-2 right-2 w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => openEditDialog(photo)}
+                            className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
+                          >
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(photo.id, photo.image_url)}
+                            className="w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                       <div className="p-4">
                         <h3 className="font-semibold text-foreground mb-1">
@@ -319,6 +383,54 @@ const Admin = () => {
           </div>
         )}
       </main>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingPhoto} onOpenChange={(open) => !open && closeEditDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Foto</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdate} className="space-y-4">
+            {editingPhoto && (
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={editingPhoto.image_url}
+                  alt={editingPhoto.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Judul</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Judul foto"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Deskripsi (opsional)</Label>
+              <Textarea
+                id="edit-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Deskripsi foto"
+                rows={3}
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button type="button" variant="outline" onClick={closeEditDialog}>
+                Batal
+              </Button>
+              <Button type="submit" disabled={updating}>
+                {updating ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
