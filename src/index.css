@@ -2,87 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+/* MQDS Design System - Navy Blue & Gold Theme */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 20% 98%;
+    --foreground: 213 40% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 213 40% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 213 40% 16%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 213 52% 24%;
+    --primary-foreground: 45 50% 95%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 45 65% 53%;
+    --secondary-foreground: 213 40% 16%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 15% 92%;
+    --muted-foreground: 213 20% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 45 65% 53%;
+    --accent-foreground: 213 40% 16%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 213 25% 85%;
+    --input: 213 25% 85%;
+    --ring: 45 65% 53%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Custom MQDS Colors */
+    --navy: 213 52% 24%;
+    --navy-dark: 213 52% 16%;
+    --navy-light: 213 40% 35%;
+    --gold: 45 65% 53%;
+    --gold-light: 45 70% 70%;
+    --gold-dark: 45 60% 40%;
+    --cream: 45 30% 96%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(213 52% 20%) 0%, hsl(213 52% 28%) 50%, hsl(213 40% 35%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(45 65% 53%) 0%, hsl(45 70% 65%) 100%);
+    --gradient-overlay: linear-gradient(180deg, hsla(213, 52%, 16%, 0.9) 0%, hsla(213, 52%, 24%, 0.7) 100%);
+
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -2px hsla(213, 52%, 24%, 0.08);
+    --shadow-medium: 0 8px 30px -4px hsla(213, 52%, 24%, 0.12);
+    --shadow-gold: 0 4px 20px -2px hsla(45, 65%, 53%, 0.3);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 213 52% 10%;
+    --foreground: 45 30% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 213 52% 14%;
+    --card-foreground: 45 30% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 213 52% 14%;
+    --popover-foreground: 45 30% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 45 65% 53%;
+    --primary-foreground: 213 52% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 213 40% 25%;
+    --secondary-foreground: 45 30% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 213 40% 20%;
+    --muted-foreground: 213 20% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 45 65% 53%;
+    --accent-foreground: 213 52% 10%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 213 40% 20%;
+    --input: 213 40% 20%;
+    --ring: 45 65% 53%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +113,104 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-title {
+    @apply font-display text-3xl md:text-4xl lg:text-5xl font-bold text-primary;
+  }
+
+  .section-subtitle {
+    @apply text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto;
+  }
+
+  .gold-underline {
+    @apply relative inline-block;
+  }
+
+  .gold-underline::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-1 bg-accent rounded-full;
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md border border-border/50 rounded-xl shadow-soft;
+  }
+
+  .animate-in {
+    animation: fadeInUp 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .shadow-gold {
+    box-shadow: var(--shadow-gold);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsla(45, 65%, 53%, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 15px hsla(45, 65%, 53%, 0);
   }
 }
