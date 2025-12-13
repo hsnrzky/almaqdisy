@@ -84,9 +84,17 @@ const GallerySection = () => {
           ))}
         </div>
 
-        {/* View More Button */}
+        {/* View More Button - Scrolls to show all gallery */}
         <div className="text-center mt-12">
-          <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-navy-dark text-primary-foreground font-medium rounded-full transition-all duration-300 hover:shadow-medium">
+          <button 
+            onClick={() => {
+              const galleryGrid = document.querySelector('#galeri .grid');
+              if (galleryGrid) {
+                galleryGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-dark-light text-primary-foreground font-medium rounded-full transition-all duration-300 hover:shadow-medium"
+          >
             Lihat Semua Galeri
           </button>
         </div>
