@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, LogIn } from "lucide-react";
+import { ArrowLeft, LogIn, UserPlus } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,16 +38,39 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      toast({ title: "Login berhasil!" });
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/`,
+          },
+        });
+        if (error) throw error;
+        toast({ 
+          title: "Registrasi berhasil!", 
+          description: "Silakan login dengan akun yang sudah dibuat." 
+        });
+        setIsSignUp(false);
+        setPassword("");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        toast({ title: "Login berhasil!" });
+      }
     } catch (error: any) {
+      let message = error.message;
+      if (error.message.includes("User already registered")) {
+        message = "Email sudah terdaftar. Silakan login.";
+      } else if (error.message.includes("Invalid login credentials")) {
+        message = "Email atau password salah.";
+      }
       toast({
         title: "Error",
-        description: error.message,
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -68,10 +92,12 @@ const Auth = () => {
         <div className="glass-card p-8 bg-card">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Login Admin
+              {isSignUp ? "Daftar Akun" : "Login"}
             </h1>
             <p className="text-muted-foreground text-sm">
-              Masuk ke panel admin
+              {isSignUp 
+                ? "Buat akun baru untuk mengakses fitur upload" 
+                : "Masuk ke panel admin"}
             </p>
           </div>
 
@@ -81,7 +107,7 @@ const Auth = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@gmail.com"
+                placeholder="email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -104,6 +130,11 @@ const Auth = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 "Loading..."
+              ) : isSignUp ? (
+                <>
+                  <UserPlus size={18} className="mr-2" />
+                  Daftar
+                </>
               ) : (
                 <>
                   <LogIn size={18} className="mr-2" />
@@ -112,6 +143,21 @@ const Auth = () => {
               )}
             </Button>
           </form>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setPassword("");
+              }}
+              className="text-sm text-accent hover:underline"
+            >
+              {isSignUp 
+                ? "Sudah punya akun? Login" 
+                : "Belum punya akun? Daftar"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
