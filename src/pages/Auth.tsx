@@ -5,12 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, LogIn, UserPlus } from "lucide-react";
+import { ArrowLeft, LogIn } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -38,25 +37,12 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast({ title: "Login berhasil!" });
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/admin`,
-          },
-        });
-        if (error) throw error;
-        toast({ title: "Registrasi berhasil!", description: "Silakan login." });
-        setIsLogin(true);
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      toast({ title: "Login berhasil!" });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -82,10 +68,10 @@ const Auth = () => {
         <div className="glass-card p-8 bg-card">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              {isLogin ? "Login Admin" : "Registrasi Admin"}
+              Login Admin
             </h1>
             <p className="text-muted-foreground text-sm">
-              {isLogin ? "Masuk ke panel admin" : "Buat akun admin baru"}
+              Masuk ke panel admin
             </p>
           </div>
 
@@ -118,28 +104,14 @@ const Auth = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 "Loading..."
-              ) : isLogin ? (
+              ) : (
                 <>
                   <LogIn size={18} className="mr-2" />
                   Login
                 </>
-              ) : (
-                <>
-                  <UserPlus size={18} className="mr-2" />
-                  Registrasi
-                </>
               )}
             </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-accent hover:underline"
-            >
-              {isLogin ? "Belum punya akun? Registrasi" : "Sudah punya akun? Login"}
-            </button>
-          </div>
         </div>
       </div>
     </div>
