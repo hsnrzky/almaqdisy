@@ -107,14 +107,44 @@ const Admin = () => {
     navigate("/auth");
   };
 
+  const validateImageFile = (file: File): string | null => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+
+    if (!allowedTypes.includes(file.type)) {
+      return 'Tipe file tidak valid. Hanya JPEG, PNG, GIF, atau WebP yang diizinkan.';
+    }
+    if (file.size > maxSize) {
+      return 'Ukuran file terlalu besar. Maksimal 10MB.';
+    }
+    return null;
+  };
+
+  const sanitizeFileName = (fileName: string): string => {
+    const ext = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    const safeExt = allowedExtensions.includes(ext) ? ext : 'jpg';
+    return `${Date.now()}.${safeExt}`;
+  };
+
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageFile || !title || !isAdmin) return;
 
+    // Validate file
+    const validationError = validateImageFile(imageFile);
+    if (validationError) {
+      toast({
+        title: "Error",
+        description: validationError,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
     try {
-      const fileExt = imageFile.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      const fileName = sanitizeFileName(imageFile.name);
 
       const { error: uploadError } = await supabase.storage
         .from("gallery")
@@ -129,8 +159,8 @@ const Admin = () => {
       const { error: insertError } = await supabase
         .from("gallery_photos")
         .insert({
-          title,
-          description: description || null,
+          title: title.trim(),
+          description: description?.trim() || null,
           image_url: urlData.publicUrl,
         });
 
