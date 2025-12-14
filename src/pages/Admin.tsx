@@ -497,28 +497,30 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-10">
-        <div className="section-container py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-foreground">Admin Panel</h1>
-            {isAdmin && (
-              <span className="px-2 py-1 bg-accent/20 text-accent text-xs font-medium rounded-full">
-                Admin
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={() => navigate("/")}>
-              <Home size={16} className="mr-2" />
-              Beranda
-            </Button>
-            <Button variant="outline" size="sm" onClick={scrollToGallery}>
-              <ArrowDown size={16} className="mr-2" />
-              Lihat Galeri
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut size={16} className="mr-2" />
-              Logout
-            </Button>
+        <div className="section-container py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-bold text-foreground">Admin Panel</h1>
+              {isAdmin && (
+                <span className="px-2 py-1 bg-accent/20 text-accent text-xs font-medium rounded-full">
+                  Admin
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => navigate("/")}>
+                <Home size={16} className="sm:mr-2" />
+                <span className="hidden sm:inline">Beranda</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={scrollToGallery}>
+                <ArrowDown size={16} className="sm:mr-2" />
+                <span className="hidden sm:inline">Lihat Galeri</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleLogout}>
+                <LogOut size={16} className="sm:mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
