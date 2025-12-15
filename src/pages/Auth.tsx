@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, LogIn, UserPlus } from "lucide-react";
+import { ArrowLeft, LogIn, UserPlus, Check, X } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +14,17 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Password validation
+  const passwordValidation = useMemo(() => ({
+    minLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+  }), [password]);
+
+  const isPasswordValid = passwordValidation.minLength && 
+                          passwordValidation.hasUppercase && 
+                          passwordValidation.hasSpecialChar;
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -35,6 +46,17 @@ const Auth = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password on signup
+    if (isSignUp && !isPasswordValid) {
+      toast({
+        title: "Password tidak memenuhi syarat",
+        description: "Pastikan password memenuhi semua kriteria yang ditentukan.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -77,6 +99,13 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  const PasswordRequirement = ({ met, text }: { met: boolean; text: string }) => (
+    <div className={`flex items-center gap-2 text-sm ${met ? 'text-green-600' : 'text-muted-foreground'}`}>
+      {met ? <Check size={14} className="text-green-600" /> : <X size={14} className="text-red-400" />}
+      <span>{text}</span>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
@@ -123,11 +152,24 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
               />
+              
+              {/* Password requirements - only show on signup */}
+              {isSignUp && password.length > 0 && (
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Syarat Password:</p>
+                  <PasswordRequirement met={passwordValidation.minLength} text="Minimal 8 karakter" />
+                  <PasswordRequirement met={passwordValidation.hasUppercase} text="Minimal 1 huruf kapital (A-Z)" />
+                  <PasswordRequirement met={passwordValidation.hasSpecialChar} text="Minimal 1 tanda baca (!@#$%^&*)" />
+                </div>
+              )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading || (isSignUp && !isPasswordValid)}
+            >
               {loading ? (
                 "Loading..."
               ) : isSignUp ? (
