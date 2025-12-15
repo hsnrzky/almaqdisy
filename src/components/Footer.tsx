@@ -1,7 +1,7 @@
 import { Instagram, Mail, MapPin, Heart } from "lucide-react";
 
 const socialLinks = [
-  { icon: Instagram, href: "#", label: "Instagram" },
+  { icon: Instagram, href: "https://www.instagram.com/mqds_foundation", label: "Instagram" },
   { icon: Mail, href: "mailto:mqds23@email.com", label: "Email" },
 ];
 
@@ -53,6 +53,17 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-primary-foreground mb-4">Kontak</h4>
             <ul className="space-y-3">
+              <li>
+                <a
+                  href="https://www.instagram.com/mqds_foundation"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-primary-foreground/70 hover:text-accent transition-colors text-sm"
+                >
+                  <Instagram size={16} />
+                  @mqds_foundation
+                </a>
+              </li>
               <li>
                 <a
                   href="mailto:mqds23@email.com"
