@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import mqdsLogo from "@/assets/mqds-logo.png";
 
 const navLinks = [
   { href: "#tentang", label: "Tentang Kami" },
@@ -39,9 +40,11 @@ const Header = () => {
             href="#"
             className="flex items-center gap-2 group"
           >
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold text-lg">M</span>
-            </div>
+            <img 
+              src={mqdsLogo} 
+              alt="MQDS Logo" 
+              className="w-10 h-10 rounded-full object-cover"
+            />
             <div className="flex flex-col">
               <span className={`font-display font-bold text-xl transition-colors ${isScrolled ? 'text-primary' : 'text-primary-foreground'}`}>
                 MQDS
