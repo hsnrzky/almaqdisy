@@ -46,7 +46,7 @@ const Header = () => {
               <span className={`font-display font-bold text-xl transition-colors ${isScrolled ? 'text-primary' : 'text-primary-foreground'}`}>
                 MQDS
               </span>
-              <span className={`text-xs font-medium transition-colors ${isScrolled ? 'text-accent' : 'text-gold-light'}`}>
+              <span className="text-xs font-medium text-accent">
                 Angkatan 23
               </span>
             </div>
