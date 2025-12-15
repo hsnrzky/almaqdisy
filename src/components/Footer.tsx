@@ -1,4 +1,5 @@
 import { Instagram, Mail, MapPin, Heart } from "lucide-react";
+import mqdsLogo from "@/assets/mqds-logo.png";
 
 const socialLinks = [
   { icon: Instagram, href: "https://www.instagram.com/mqds_foundation", label: "Instagram" },
@@ -14,9 +15,11 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-accent flex items-center justify-center">
-                <span className="text-accent-foreground font-display font-bold text-xl">M</span>
-              </div>
+              <img 
+                src={mqdsLogo} 
+                alt="MQDS Logo" 
+                className="w-12 h-12 rounded-full object-cover"
+              />
               <div>
                 <h3 className="font-display text-xl font-bold text-primary-foreground">MQDS</h3>
                 <p className="text-gold-light text-sm">Angkatan 23 - Al Maqdisy</p>
