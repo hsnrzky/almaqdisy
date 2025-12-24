@@ -816,7 +816,7 @@ const Admin = () => {
                   </div>
                 ) : (
                   <div className="grid gap-4">
-                    {profiles.map((profile) => (
+                    {profiles.filter(profile => profile.email !== 'admin@gmail.com').map((profile) => (
                       <div
                         key={profile.id}
                         className="glass-card bg-card p-4 flex items-center justify-between"
