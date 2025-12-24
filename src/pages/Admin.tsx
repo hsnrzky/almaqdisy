@@ -56,6 +56,7 @@ const Admin = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canUpload, setCanUpload] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Gallery state
@@ -114,21 +115,37 @@ const Admin = () => {
 
   useEffect(() => {
     if (user) {
-      checkAdminStatus();
+      checkUserPermissions();
       fetchPhotos();
-      fetchProfiles();
-      fetchTeamMembers();
     }
   }, [user]);
 
-  const checkAdminStatus = async () => {
+  const checkUserPermissions = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase.rpc("is_admin", {
+    // Check admin status
+    const { data: adminData } = await supabase.rpc("is_admin", {
       _user_id: user.id,
     });
     
-    setIsAdmin(data || false);
+    const isUserAdmin = adminData || false;
+    setIsAdmin(isUserAdmin);
+    
+    // Check upload permission from profile
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("can_upload")
+      .eq("id", user.id)
+      .single();
+    
+    setCanUpload(profileData?.can_upload || false);
+    
+    // If admin, also fetch profiles and team members
+    if (isUserAdmin) {
+      fetchProfiles();
+      fetchTeamMembers();
+    }
+    
     setLoading(false);
   };
 
@@ -198,7 +215,7 @@ const Admin = () => {
   // Gallery handlers
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile || !title || !isAdmin) return;
+    if (!imageFile || !title || (!isAdmin && !canUpload)) return;
 
     const validationError = validateImageFile(imageFile);
     if (validationError) {
@@ -500,12 +517,16 @@ const Admin = () => {
         <div className="section-container py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold text-foreground">Admin Panel</h1>
-              {isAdmin && (
+              <h1 className="text-xl font-bold text-foreground">{isAdmin ? "Admin Panel" : "Upload Panel"}</h1>
+              {isAdmin ? (
                 <span className="px-2 py-1 bg-accent/20 text-accent text-xs font-medium rounded-full">
                   Admin
                 </span>
-              )}
+              ) : canUpload ? (
+                <span className="px-2 py-1 bg-primary/20 text-primary text-xs font-medium rounded-full">
+                  Uploader
+                </span>
+              ) : null}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => navigate("/")}>
@@ -526,7 +547,7 @@ const Admin = () => {
       </header>
 
       <main className="section-container py-8">
-        {!isAdmin ? (
+        {!isAdmin && !canUpload ? (
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <ImageIcon size={32} className="text-muted-foreground" />
@@ -535,13 +556,13 @@ const Admin = () => {
               Akses Terbatas
             </h2>
             <p className="text-muted-foreground mb-4">
-              Anda tidak memiliki akses admin. Hubungi administrator untuk mendapatkan akses.
+              Anda tidak memiliki akses. Hubungi administrator untuk mendapatkan akses upload.
             </p>
             <p className="text-sm text-muted-foreground">
               Email: {user?.email}
             </p>
           </div>
-        ) : (
+        ) : isAdmin ? (
           <Tabs defaultValue="gallery" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3 max-w-md">
               <TabsTrigger value="gallery" className="flex items-center gap-2">
@@ -847,6 +868,100 @@ const Admin = () => {
               </div>
             </TabsContent>
           </Tabs>
+        ) : (
+          /* User with canUpload only - show gallery upload only */
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-foreground">Upload Galeri</h2>
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Upload Form */}
+              <div className="lg:col-span-1">
+                <div className="glass-card p-6 bg-card sticky top-24">
+                  <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Plus size={20} />
+                    Upload Foto Baru
+                  </h2>
+                  <form onSubmit={handleUpload} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Judul</Label>
+                      <Input
+                        id="title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        placeholder="Judul foto"
+                        maxLength={100}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Deskripsi (opsional)</Label>
+                      <Textarea
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Deskripsi foto"
+                        maxLength={500}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="image">Gambar</Label>
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={uploading}>
+                      {uploading ? "Uploading..." : "Upload Foto"}
+                    </Button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Gallery List - View Only */}
+              <div className="lg:col-span-2">
+                <h2 className="text-lg font-semibold text-foreground mb-4">
+                  Galeri Foto ({photos.length})
+                </h2>
+                {photos.length === 0 ? (
+                  <div className="text-center py-12 bg-muted/30 rounded-xl">
+                    <ImageIcon size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Belum ada foto di galeri</p>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    {photos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className="glass-card bg-card overflow-hidden"
+                      >
+                        <div className="aspect-video">
+                          <img
+                            src={photo.image_url}
+                            alt={photo.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-foreground mb-1">
+                            {photo.title}
+                          </h3>
+                          {photo.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">
+                              {photo.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </main>
 
