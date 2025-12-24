@@ -27,6 +27,8 @@ import {
   UserCog,
   Instagram,
   Activity,
+  Search,
+  X,
 } from "lucide-react";
 import {
   Table,
@@ -113,6 +115,9 @@ const Admin = () => {
   // Activity logs state
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(false);
+  const [logSearch, setLogSearch] = useState("");
+  const [logActionFilter, setLogActionFilter] = useState<string>("all");
+  const [logTypeFilter, setLogTypeFilter] = useState<string>("all");
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -1008,75 +1013,156 @@ const Admin = () => {
             {/* Activity Logs Tab */}
             <TabsContent value="logs">
               <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <Activity size={20} />
-                  Log Aktivitas ({activityLogs.length})
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Activity size={20} />
+                    Log Aktivitas
+                  </h2>
+                  
+                  {/* Filters */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Search */}
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Cari user atau target..."
+                        value={logSearch}
+                        onChange={(e) => setLogSearch(e.target.value)}
+                        className="pl-9 h-9 w-48"
+                      />
+                      {logSearch && (
+                        <button
+                          onClick={() => setLogSearch("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* Action Filter */}
+                    <div className="flex items-center gap-1">
+                      {["all", "upload", "add", "update", "delete"].map((action) => (
+                        <button
+                          key={action}
+                          onClick={() => setLogActionFilter(action)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            logActionFilter === action
+                              ? action === "all" ? "bg-foreground text-background"
+                              : action === "upload" ? "bg-green-500 text-white"
+                              : action === "add" ? "bg-purple-500 text-white"
+                              : action === "update" ? "bg-blue-500 text-white"
+                              : "bg-red-500 text-white"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {action === "all" ? "Semua" : action}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* Type Filter */}
+                    <div className="flex items-center gap-1">
+                      {["all", "gallery_photo", "team_member"].map((type) => (
+                        <button
+                          key={type}
+                          onClick={() => setLogTypeFilter(type)}
+                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            logTypeFilter === type
+                              ? "bg-accent text-accent-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {type === "all" ? "Semua Tipe" : type === "gallery_photo" ? "Galeri" : "Tim Inti"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
                 {loadingLogs ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">Loading...</p>
                   </div>
-                ) : activityLogs.length === 0 ? (
-                  <div className="text-center py-12 bg-muted/30 rounded-xl">
-                    <Activity size={48} className="mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Belum ada aktivitas tercatat</p>
-                  </div>
-                ) : (
-                  <div className="glass-card bg-card overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Waktu</TableHead>
-                            <TableHead>User</TableHead>
-                            <TableHead>Aksi</TableHead>
-                            <TableHead>Tipe</TableHead>
-                            <TableHead>Target</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {activityLogs.map((log) => (
-                            <TableRow key={log.id}>
-                              <TableCell className="whitespace-nowrap">
-                                {new Date(log.created_at).toLocaleString('id-ID', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </TableCell>
-                              <TableCell className="max-w-[200px] truncate">
-                                {log.user_email || 'Unknown'}
-                              </TableCell>
-                              <TableCell>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  log.action === 'upload' ? 'bg-green-500/20 text-green-600' :
-                                  log.action === 'delete' ? 'bg-red-500/20 text-red-600' :
-                                  log.action === 'update' ? 'bg-blue-500/20 text-blue-600' :
-                                  log.action === 'add' ? 'bg-purple-500/20 text-purple-600' :
-                                  'bg-muted text-muted-foreground'
-                                }`}>
-                                  {log.action}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-muted-foreground">
-                                  {log.target_type === 'gallery_photo' ? 'Galeri' : 
-                                   log.target_type === 'team_member' ? 'Tim Inti' : 
-                                   log.target_type}
-                                </span>
-                              </TableCell>
-                              <TableCell className="max-w-[200px] truncate">
-                                {log.target_name || '-'}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                ) : (() => {
+                  const filteredLogs = activityLogs.filter((log) => {
+                    const matchesSearch = logSearch === "" || 
+                      log.user_email?.toLowerCase().includes(logSearch.toLowerCase()) ||
+                      log.target_name?.toLowerCase().includes(logSearch.toLowerCase());
+                    const matchesAction = logActionFilter === "all" || log.action === logActionFilter;
+                    const matchesType = logTypeFilter === "all" || log.target_type === logTypeFilter;
+                    return matchesSearch && matchesAction && matchesType;
+                  });
+                  
+                  return filteredLogs.length === 0 ? (
+                    <div className="text-center py-12 bg-muted/30 rounded-xl">
+                      <Activity size={48} className="mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">
+                        {activityLogs.length === 0 ? "Belum ada aktivitas tercatat" : "Tidak ada hasil yang cocok"}
+                      </p>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Menampilkan {filteredLogs.length} dari {activityLogs.length} log
+                      </p>
+                      <div className="glass-card bg-card overflow-hidden rounded-xl">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Waktu</TableHead>
+                                <TableHead>User</TableHead>
+                                <TableHead>Aksi</TableHead>
+                                <TableHead>Tipe</TableHead>
+                                <TableHead>Target</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredLogs.map((log) => (
+                                <TableRow key={log.id}>
+                                  <TableCell className="whitespace-nowrap">
+                                    {new Date(log.created_at).toLocaleString('id-ID', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </TableCell>
+                                  <TableCell className="max-w-[200px] truncate">
+                                    {log.user_email || 'Unknown'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      log.action === 'upload' ? 'bg-green-500/20 text-green-600' :
+                                      log.action === 'delete' ? 'bg-red-500/20 text-red-600' :
+                                      log.action === 'update' ? 'bg-blue-500/20 text-blue-600' :
+                                      log.action === 'add' ? 'bg-purple-500/20 text-purple-600' :
+                                      'bg-muted text-muted-foreground'
+                                    }`}>
+                                      {log.action}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-muted-foreground">
+                                      {log.target_type === 'gallery_photo' ? 'Galeri' : 
+                                       log.target_type === 'team_member' ? 'Tim Inti' : 
+                                       log.target_type}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="max-w-[200px] truncate">
+                                    {log.target_name || '-'}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </TabsContent>
           </Tabs>
