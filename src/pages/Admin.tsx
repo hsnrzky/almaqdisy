@@ -803,52 +803,64 @@ const Admin = () => {
             <TabsContent value="users">
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-foreground">
-                  Daftar Users ({profiles.length})
+                  Daftar Users ({profiles.filter(p => p.email !== 'admin@gmail.com').length})
                 </h2>
                 {loadingProfiles ? (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">Loading...</p>
                   </div>
-                ) : profiles.length === 0 ? (
+                ) : profiles.filter(p => p.email !== 'admin@gmail.com').length === 0 ? (
                   <div className="text-center py-12 bg-muted/30 rounded-xl">
                     <UserCog size={48} className="mx-auto text-muted-foreground mb-4" />
                     <p className="text-muted-foreground">Belum ada user terdaftar</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4">
+                  <div className="grid gap-3">
                     {profiles.filter(profile => profile.email !== 'admin@gmail.com').map((profile) => (
                       <div
                         key={profile.id}
-                        className="glass-card bg-card p-4 flex items-center justify-between"
+                        className="glass-card bg-card p-4 rounded-xl"
                       >
-                        <div>
-                          <p className="font-medium text-foreground">{profile.email || 'No email'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Bergabung: {new Date(profile.created_at).toLocaleDateString('id-ID')}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-4 flex-wrap">
-                            <div className="flex items-center gap-2">
-                              <Label htmlFor={`upload-${profile.id}`} className="text-sm">
-                                Galeri
-                              </Label>
-                              <Switch
-                                id={`upload-${profile.id}`}
-                                checked={profile.can_upload}
-                                onCheckedChange={() => toggleUploadPermission(profile.id, profile.can_upload)}
-                              />
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                          {/* User Info */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-primary">
+                                {profile.email?.charAt(0).toUpperCase() || '?'}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Label htmlFor={`team-${profile.id}`} className="text-sm">
-                                Tim Inti
-                              </Label>
-                              <Switch
-                                id={`team-${profile.id}`}
-                                checked={profile.can_manage_team}
-                                onCheckedChange={() => toggleTeamPermission(profile.id, profile.can_manage_team)}
-                              />
+                            <div>
+                              <p className="font-medium text-foreground">{profile.email || 'No email'}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Bergabung {new Date(profile.created_at).toLocaleDateString('id-ID')}
+                              </p>
                             </div>
+                          </div>
+                          
+                          {/* Permissions */}
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <button
+                              onClick={() => toggleUploadPermission(profile.id, profile.can_upload)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                                profile.can_upload 
+                                  ? 'bg-green-500/20 text-green-600 hover:bg-green-500/30' 
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              }`}
+                            >
+                              <ImageIcon size={12} />
+                              Galeri
+                            </button>
+                            <button
+                              onClick={() => toggleTeamPermission(profile.id, profile.can_manage_team)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                                profile.can_manage_team 
+                                  ? 'bg-blue-500/20 text-blue-600 hover:bg-blue-500/30' 
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              }`}
+                            >
+                              <Users size={12} />
+                              Tim Inti
+                            </button>
                           </div>
                         </div>
                       </div>
