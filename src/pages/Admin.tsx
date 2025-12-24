@@ -26,7 +26,16 @@ import {
   Users,
   UserCog,
   Instagram,
+  Activity,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface GalleryPhoto {
   id: string;
@@ -51,6 +60,17 @@ interface TeamMember {
   instagram: string | null;
   photo_url: string | null;
   display_order: number;
+}
+
+interface ActivityLog {
+  id: string;
+  user_id: string;
+  user_email: string | null;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  target_name: string | null;
+  created_at: string;
 }
 
 const Admin = () => {
@@ -89,6 +109,10 @@ const Admin = () => {
   const [editMemberRole, setEditMemberRole] = useState("");
   const [editMemberInstagram, setEditMemberInstagram] = useState("");
   const [updatingMember, setUpdatingMember] = useState(false);
+
+  // Activity logs state
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -146,10 +170,11 @@ const Admin = () => {
     setCanUpload(userCanUpload);
     setCanManageTeam(userCanManageTeam);
     
-    // If admin, fetch profiles and team members
+    // If admin, fetch profiles, team members and activity logs
     if (isUserAdmin) {
       fetchProfiles();
       fetchTeamMembers();
+      fetchActivityLogs();
     } else if (userCanManageTeam) {
       // Non-admin with team management permission
       fetchTeamMembers();
@@ -193,6 +218,37 @@ const Admin = () => {
       setTeamMembers(data);
     }
     setLoadingTeam(false);
+  };
+
+  const fetchActivityLogs = async () => {
+    setLoadingLogs(true);
+    const { data, error } = await supabase
+      .from("activity_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (data) {
+      setActivityLogs(data);
+    }
+    setLoadingLogs(false);
+  };
+
+  const logActivity = async (action: string, targetType: string, targetId?: string, targetName?: string) => {
+    if (!user) return;
+    
+    try {
+      await supabase.from("activity_logs").insert({
+        user_id: user.id,
+        user_email: user.email,
+        action,
+        target_type: targetType,
+        target_id: targetId || null,
+        target_name: targetName || null,
+      });
+    } catch (error) {
+      console.error("Failed to log activity:", error);
+    }
   };
 
   const handleLogout = async () => {
@@ -260,11 +316,14 @@ const Admin = () => {
 
       if (insertError) throw insertError;
 
+      await logActivity("upload", "gallery_photo", undefined, title.trim());
+      
       toast({ title: "Foto berhasil diupload!" });
       setTitle("");
       setDescription("");
       setImageFile(null);
       fetchPhotos();
+      if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -286,6 +345,8 @@ const Admin = () => {
         await supabase.storage.from("gallery").remove([fileName]);
       }
 
+      const photoToDelete = photos.find(p => p.id === id);
+      
       const { error } = await supabase
         .from("gallery_photos")
         .delete()
@@ -293,8 +354,11 @@ const Admin = () => {
 
       if (error) throw error;
 
+      await logActivity("delete", "gallery_photo", id, photoToDelete?.title);
+      
       toast({ title: "Foto berhasil dihapus!" });
       fetchPhotos();
+      fetchActivityLogs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -439,12 +503,15 @@ const Admin = () => {
 
       if (error) throw error;
 
+      await logActivity("add", "team_member", undefined, memberName.trim());
+      
       toast({ title: "Anggota inti berhasil ditambahkan!" });
       setMemberName("");
       setMemberRole("");
       setMemberInstagram("");
       setMemberPhotoFile(null);
       fetchTeamMembers();
+      if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -460,6 +527,8 @@ const Admin = () => {
     if (!isAdmin && !canManageTeam) return;
 
     try {
+      const memberToDelete = teamMembers.find(m => m.id === id);
+      
       if (photoUrl) {
         const fileName = photoUrl.split("/").pop();
         if (fileName) {
@@ -474,8 +543,11 @@ const Admin = () => {
 
       if (error) throw error;
 
+      await logActivity("delete", "team_member", id, memberToDelete?.name);
+      
       toast({ title: "Anggota inti berhasil dihapus!" });
       fetchTeamMembers();
+      if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -516,9 +588,12 @@ const Admin = () => {
 
       if (error) throw error;
 
+      await logActivity("update", "team_member", editingMember.id, editMemberName.trim());
+      
       toast({ title: "Anggota inti berhasil diperbarui!" });
       closeEditMemberDialog();
       fetchTeamMembers();
+      if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -598,18 +673,22 @@ const Admin = () => {
           </div>
         ) : isAdmin ? (
           <Tabs defaultValue="gallery" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 max-w-md">
+            <TabsList className="grid w-full grid-cols-4 max-w-lg">
               <TabsTrigger value="gallery" className="flex items-center gap-2">
                 <ImageIcon size={16} />
-                Galeri
+                <span className="hidden sm:inline">Galeri</span>
               </TabsTrigger>
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <UserCog size={16} />
-                Users
+                <span className="hidden sm:inline">Users</span>
               </TabsTrigger>
               <TabsTrigger value="team" className="flex items-center gap-2">
                 <Users size={16} />
-                Tim Inti
+                <span className="hidden sm:inline">Tim Inti</span>
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="flex items-center gap-2">
+                <Activity size={16} />
+                <span className="hidden sm:inline">Log</span>
               </TabsTrigger>
             </TabsList>
 
@@ -911,6 +990,81 @@ const Admin = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* Activity Logs Tab */}
+            <TabsContent value="logs">
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <Activity size={20} />
+                  Log Aktivitas ({activityLogs.length})
+                </h2>
+                {loadingLogs ? (
+                  <div className="text-center py-12">
+                    <p className="text-muted-foreground">Loading...</p>
+                  </div>
+                ) : activityLogs.length === 0 ? (
+                  <div className="text-center py-12 bg-muted/30 rounded-xl">
+                    <Activity size={48} className="mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Belum ada aktivitas tercatat</p>
+                  </div>
+                ) : (
+                  <div className="glass-card bg-card overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Waktu</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead>Aksi</TableHead>
+                            <TableHead>Tipe</TableHead>
+                            <TableHead>Target</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {activityLogs.map((log) => (
+                            <TableRow key={log.id}>
+                              <TableCell className="whitespace-nowrap">
+                                {new Date(log.created_at).toLocaleString('id-ID', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </TableCell>
+                              <TableCell className="max-w-[200px] truncate">
+                                {log.user_email || 'Unknown'}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                  log.action === 'upload' ? 'bg-green-500/20 text-green-600' :
+                                  log.action === 'delete' ? 'bg-red-500/20 text-red-600' :
+                                  log.action === 'update' ? 'bg-blue-500/20 text-blue-600' :
+                                  log.action === 'add' ? 'bg-purple-500/20 text-purple-600' :
+                                  'bg-muted text-muted-foreground'
+                                }`}>
+                                  {log.action}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-muted-foreground">
+                                  {log.target_type === 'gallery_photo' ? 'Galeri' : 
+                                   log.target_type === 'team_member' ? 'Tim Inti' : 
+                                   log.target_type}
+                                </span>
+                              </TableCell>
+                              <TableCell className="max-w-[200px] truncate">
+                                {log.target_name || '-'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
