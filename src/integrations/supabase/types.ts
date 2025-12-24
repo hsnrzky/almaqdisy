@@ -61,6 +61,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          can_manage_team: boolean
           can_upload: boolean
           created_at: string
           email: string | null
@@ -68,6 +69,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          can_manage_team?: boolean
           can_upload?: boolean
           created_at?: string
           email?: string | null
@@ -75,6 +77,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          can_manage_team?: boolean
           can_upload?: boolean
           created_at?: string
           email?: string | null

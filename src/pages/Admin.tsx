@@ -40,6 +40,7 @@ interface Profile {
   id: string;
   email: string | null;
   can_upload: boolean;
+  can_manage_team: boolean;
   created_at: string;
 }
 
@@ -57,6 +58,7 @@ const Admin = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [canUpload, setCanUpload] = useState(false);
+  const [canManageTeam, setCanManageTeam] = useState(false);
   const [loading, setLoading] = useState(true);
   
   // Gallery state
@@ -131,18 +133,25 @@ const Admin = () => {
     const isUserAdmin = adminData || false;
     setIsAdmin(isUserAdmin);
     
-    // Check upload permission from profile
+    // Check permissions from profile
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("can_upload")
+      .select("can_upload, can_manage_team")
       .eq("id", user.id)
       .single();
     
-    setCanUpload(profileData?.can_upload || false);
+    const userCanUpload = profileData?.can_upload || false;
+    const userCanManageTeam = profileData?.can_manage_team || false;
     
-    // If admin, also fetch profiles and team members
+    setCanUpload(userCanUpload);
+    setCanManageTeam(userCanManageTeam);
+    
+    // If admin, fetch profiles and team members
     if (isUserAdmin) {
       fetchProfiles();
+      fetchTeamMembers();
+    } else if (userCanManageTeam) {
+      // Non-admin with team management permission
       fetchTeamMembers();
     }
     
@@ -164,7 +173,7 @@ const Admin = () => {
     setLoadingProfiles(true);
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, email, can_upload, can_manage_team, created_at")
       .order("created_at", { ascending: false });
 
     if (data) {
@@ -360,10 +369,33 @@ const Admin = () => {
     }
   };
 
+  // Toggle team management permission
+  const toggleTeamPermission = async (profileId: string, currentValue: boolean) => {
+    if (!isAdmin) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ can_manage_team: !currentValue })
+        .eq("id", profileId);
+
+      if (error) throw error;
+
+      toast({ title: `Akses tim inti ${!currentValue ? 'diaktifkan' : 'dinonaktifkan'}!` });
+      fetchProfiles();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Team member handlers
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!memberName || !memberRole || !isAdmin) return;
+    if (!memberName || !memberRole || (!isAdmin && !canManageTeam)) return;
 
     setAddingMember(true);
     try {
@@ -425,7 +457,7 @@ const Admin = () => {
   };
 
   const handleDeleteMember = async (id: string, photoUrl: string | null) => {
-    if (!isAdmin) return;
+    if (!isAdmin && !canManageTeam) return;
 
     try {
       if (photoUrl) {
@@ -469,7 +501,7 @@ const Admin = () => {
 
   const handleUpdateMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingMember || !editMemberName || !editMemberRole || !isAdmin) return;
+    if (!editingMember || !editMemberName || !editMemberRole || (!isAdmin && !canManageTeam)) return;
 
     setUpdatingMember(true);
     try {
@@ -517,14 +549,16 @@ const Admin = () => {
         <div className="section-container py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold text-foreground">{isAdmin ? "Admin Panel" : "Upload Panel"}</h1>
+              <h1 className="text-xl font-bold text-foreground">
+                {isAdmin ? "Admin Panel" : (canUpload || canManageTeam) ? "Panel Akses" : "Upload Panel"}
+              </h1>
               {isAdmin ? (
                 <span className="px-2 py-1 bg-accent/20 text-accent text-xs font-medium rounded-full">
                   Admin
                 </span>
-              ) : canUpload ? (
+              ) : (canUpload || canManageTeam) ? (
                 <span className="px-2 py-1 bg-primary/20 text-primary text-xs font-medium rounded-full">
-                  Uploader
+                  {canUpload && canManageTeam ? "Uploader & Tim" : canUpload ? "Uploader" : "Tim Inti"}
                 </span>
               ) : null}
             </div>
@@ -547,7 +581,7 @@ const Admin = () => {
       </header>
 
       <main className="section-container py-8">
-        {!isAdmin && !canUpload ? (
+        {!isAdmin && !canUpload && !canManageTeam ? (
           <div className="text-center py-16">
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <ImageIcon size={32} className="text-muted-foreground" />
@@ -556,7 +590,7 @@ const Admin = () => {
               Akses Terbatas
             </h2>
             <p className="text-muted-foreground mb-4">
-              Anda tidak memiliki akses. Hubungi administrator untuk mendapatkan akses upload.
+              Anda tidak memiliki akses. Hubungi administrator untuk mendapatkan akses.
             </p>
             <p className="text-sm text-muted-foreground">
               Email: {user?.email}
@@ -715,15 +749,27 @@ const Admin = () => {
                           </p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor={`upload-${profile.id}`} className="text-sm">
-                              Akses Upload
-                            </Label>
-                            <Switch
-                              id={`upload-${profile.id}`}
-                              checked={profile.can_upload}
-                              onCheckedChange={() => toggleUploadPermission(profile.id, profile.can_upload)}
-                            />
+                          <div className="flex items-center gap-4 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`upload-${profile.id}`} className="text-sm">
+                                Galeri
+                              </Label>
+                              <Switch
+                                id={`upload-${profile.id}`}
+                                checked={profile.can_upload}
+                                onCheckedChange={() => toggleUploadPermission(profile.id, profile.can_upload)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`team-${profile.id}`} className="text-sm">
+                                Tim Inti
+                              </Label>
+                              <Switch
+                                id={`team-${profile.id}`}
+                                checked={profile.can_manage_team}
+                                onCheckedChange={() => toggleTeamPermission(profile.id, profile.can_manage_team)}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -869,99 +915,255 @@ const Admin = () => {
             </TabsContent>
           </Tabs>
         ) : (
-          /* User with canUpload only - show gallery upload only */
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-foreground">Upload Galeri</h2>
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Upload Form */}
-              <div className="lg:col-span-1">
-                <div className="glass-card p-6 bg-card sticky top-24">
-                  <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Plus size={20} />
-                    Upload Foto Baru
-                  </h2>
-                  <form onSubmit={handleUpload} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Judul</Label>
-                      <Input
-                        id="title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="Judul foto"
-                        maxLength={100}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Deskripsi (opsional)</Label>
-                      <Textarea
-                        id="description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Deskripsi foto"
-                        maxLength={500}
-                        rows={3}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="image">Gambar</Label>
-                      <Input
-                        id="image"
-                        type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                        required
-                      />
-                      <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
-                    </div>
-                    <Button type="submit" className="w-full" disabled={uploading}>
-                      {uploading ? "Uploading..." : "Upload Foto"}
-                    </Button>
-                  </form>
-                </div>
-              </div>
+          /* User with canUpload or canManageTeam - show tabs based on permissions */
+          <Tabs defaultValue={canUpload ? "gallery" : "team"} className="space-y-6">
+            <TabsList className={`grid w-full max-w-md ${canUpload && canManageTeam ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {canUpload && (
+                <TabsTrigger value="gallery" className="flex items-center gap-2">
+                  <ImageIcon size={16} />
+                  Galeri
+                </TabsTrigger>
+              )}
+              {canManageTeam && (
+                <TabsTrigger value="team" className="flex items-center gap-2">
+                  <Users size={16} />
+                  Tim Inti
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-              {/* Gallery List - View Only */}
-              <div className="lg:col-span-2">
-                <h2 className="text-lg font-semibold text-foreground mb-4">
-                  Galeri Foto ({photos.length})
-                </h2>
-                {photos.length === 0 ? (
-                  <div className="text-center py-12 bg-muted/30 rounded-xl">
-                    <ImageIcon size={48} className="mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Belum ada foto di galeri</p>
-                  </div>
-                ) : (
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {photos.map((photo) => (
-                      <div
-                        key={photo.id}
-                        className="glass-card bg-card overflow-hidden"
-                      >
-                        <div className="aspect-video">
-                          <img
-                            src={photo.image_url}
-                            alt={photo.title}
-                            className="w-full h-full object-cover"
+            {/* Gallery Tab for Users */}
+            {canUpload && (
+              <TabsContent value="gallery">
+                <div className="grid lg:grid-cols-3 gap-8">
+                  {/* Upload Form */}
+                  <div className="lg:col-span-1">
+                    <div className="glass-card p-6 bg-card sticky top-24">
+                      <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <Plus size={20} />
+                        Upload Foto Baru
+                      </h2>
+                      <form onSubmit={handleUpload} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="title">Judul</Label>
+                          <Input
+                            id="title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Judul foto"
+                            maxLength={100}
+                            required
                           />
                         </div>
-                        <div className="p-4">
-                          <h3 className="font-semibold text-foreground mb-1">
-                            {photo.title}
-                          </h3>
-                          {photo.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {photo.description}
-                            </p>
-                          )}
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Deskripsi (opsional)</Label>
+                          <Textarea
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Deskripsi foto"
+                            maxLength={500}
+                            rows={3}
+                          />
                         </div>
-                      </div>
-                    ))}
+                        <div className="space-y-2">
+                          <Label htmlFor="image">Gambar</Label>
+                          <Input
+                            id="image"
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                            required
+                          />
+                          <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={uploading}>
+                          {uploading ? "Uploading..." : "Upload Foto"}
+                        </Button>
+                      </form>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
+
+                  {/* Gallery List - View Only */}
+                  <div className="lg:col-span-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-4">
+                      Galeri Foto ({photos.length})
+                    </h2>
+                    {photos.length === 0 ? (
+                      <div className="text-center py-12 bg-muted/30 rounded-xl">
+                        <ImageIcon size={48} className="mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">Belum ada foto di galeri</p>
+                      </div>
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        {photos.map((photo) => (
+                          <div
+                            key={photo.id}
+                            className="glass-card bg-card overflow-hidden"
+                          >
+                            <div className="aspect-video">
+                              <img
+                                src={photo.image_url}
+                                alt={photo.title}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="p-4">
+                              <h3 className="font-semibold text-foreground mb-1">
+                                {photo.title}
+                              </h3>
+                              {photo.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                  {photo.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            )}
+
+            {/* Team Tab for Users */}
+            {canManageTeam && (
+              <TabsContent value="team">
+                <div className="grid lg:grid-cols-3 gap-8">
+                  {/* Add Member Form */}
+                  <div className="lg:col-span-1">
+                    <div className="glass-card p-6 bg-card sticky top-24">
+                      <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <Plus size={20} />
+                        Tambah Anggota Inti
+                      </h2>
+                      <form onSubmit={handleAddMember} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="memberName">Nama</Label>
+                          <Input
+                            id="memberName"
+                            value={memberName}
+                            onChange={(e) => setMemberName(e.target.value)}
+                            placeholder="Nama anggota"
+                            maxLength={100}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="memberRole">Jabatan</Label>
+                          <Input
+                            id="memberRole"
+                            value={memberRole}
+                            onChange={(e) => setMemberRole(e.target.value)}
+                            placeholder="Jabatan/Role"
+                            maxLength={100}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="memberInstagram">Instagram (opsional)</Label>
+                          <div className="relative">
+                            <Instagram size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              id="memberInstagram"
+                              value={memberInstagram}
+                              onChange={(e) => setMemberInstagram(e.target.value)}
+                              placeholder="username_instagram"
+                              className="pl-10"
+                              maxLength={50}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="memberPhoto">Foto (opsional)</Label>
+                          <Input
+                            id="memberPhoto"
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={(e) => setMemberPhotoFile(e.target.files?.[0] || null)}
+                          />
+                          <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={addingMember}>
+                          {addingMember ? "Menambahkan..." : "Tambah Anggota"}
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+
+                  {/* Team Members List */}
+                  <div className="lg:col-span-2">
+                    <h2 className="text-lg font-semibold text-foreground mb-4">
+                      Anggota Inti ({teamMembers.length})
+                    </h2>
+                    {loadingTeam ? (
+                      <div className="text-center py-12">
+                        <p className="text-muted-foreground">Loading...</p>
+                      </div>
+                    ) : teamMembers.length === 0 ? (
+                      <div className="text-center py-12 bg-muted/30 rounded-xl">
+                        <Users size={48} className="mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">Belum ada anggota inti</p>
+                      </div>
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        {teamMembers.map((member) => (
+                          <div
+                            key={member.id}
+                            className="group glass-card bg-card overflow-hidden"
+                          >
+                            <div className="aspect-square relative bg-muted">
+                              {member.photo_url ? (
+                                <img
+                                  src={member.photo_url}
+                                  alt={member.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Users size={48} className="text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => openEditMemberDialog(member)}
+                                  className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMember(member.id, member.photo_url)}
+                                  className="w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="p-4">
+                              <h3 className="font-semibold text-foreground">{member.name}</h3>
+                              <p className="text-sm text-muted-foreground">{member.role}</p>
+                              {member.instagram && (
+                                <a
+                                  href={`https://instagram.com/${member.instagram}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-accent hover:underline flex items-center gap-1 mt-2"
+                                >
+                                  <Instagram size={14} />
+                                  @{member.instagram}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            )}
+          </Tabs>
         )}
       </main>
 
