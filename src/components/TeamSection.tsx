@@ -106,11 +106,11 @@ const TeamSection = () => {
                   </div>
                 )}
                 {/* Overlay on hover */}
-                {member.instagram && (
+                  {member.instagram && /^[a-zA-Z0-9._]{1,30}$/.test(member.instagram) && (
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-6">
                     <div className="flex gap-3">
                       <a
-                        href={`https://instagram.com/${member.instagram}`}
+                        href={`https://instagram.com/${encodeURIComponent(member.instagram)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-10 h-10 rounded-full bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center hover:bg-accent transition-colors"
