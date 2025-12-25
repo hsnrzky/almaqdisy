@@ -282,6 +282,12 @@ const Admin = () => {
     return `${Date.now()}.${safeExt}`;
   };
 
+  // Instagram username validation
+  const validateInstagramUsername = (username: string): boolean => {
+    if (!username) return true; // Optional field
+    return /^[a-zA-Z0-9._]{1,30}$/.test(username);
+  };
+
   // Gallery handlers
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -466,6 +472,16 @@ const Admin = () => {
     e.preventDefault();
     if (!memberName || !memberRole || (!isAdmin && !canManageTeam)) return;
 
+    // Validate Instagram username
+    if (memberInstagram && !validateInstagramUsername(memberInstagram.trim())) {
+      toast({
+        title: "Error",
+        description: "Username Instagram tidak valid. Hanya boleh berisi huruf, angka, titik, dan underscore (max 30 karakter).",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setAddingMember(true);
     try {
       let photoUrl = null;
@@ -579,6 +595,16 @@ const Admin = () => {
   const handleUpdateMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMember || !editMemberName || !editMemberRole || (!isAdmin && !canManageTeam)) return;
+
+    // Validate Instagram username
+    if (editMemberInstagram && !validateInstagramUsername(editMemberInstagram.trim())) {
+      toast({
+        title: "Error",
+        description: "Username Instagram tidak valid. Hanya boleh berisi huruf, angka, titik, dan underscore (max 30 karakter).",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setUpdatingMember(true);
     try {
@@ -990,9 +1016,9 @@ const Admin = () => {
                           <div className="p-4">
                             <h3 className="font-semibold text-foreground">{member.name}</h3>
                             <p className="text-sm text-muted-foreground">{member.role}</p>
-                            {member.instagram && (
+                            {member.instagram && /^[a-zA-Z0-9._]{1,30}$/.test(member.instagram) && (
                               <a
-                                href={`https://instagram.com/${member.instagram}`}
+                                href={`https://instagram.com/${encodeURIComponent(member.instagram)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-accent hover:underline flex items-center gap-1 mt-2"
@@ -1395,9 +1421,9 @@ const Admin = () => {
                             <div className="p-4">
                               <h3 className="font-semibold text-foreground">{member.name}</h3>
                               <p className="text-sm text-muted-foreground">{member.role}</p>
-                              {member.instagram && (
+                              {member.instagram && /^[a-zA-Z0-9._]{1,30}$/.test(member.instagram) && (
                                 <a
-                                  href={`https://instagram.com/${member.instagram}`}
+                                  href={`https://instagram.com/${encodeURIComponent(member.instagram)}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-sm text-accent hover:underline flex items-center gap-1 mt-2"
