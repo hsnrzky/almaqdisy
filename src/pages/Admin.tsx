@@ -16,6 +16,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   LogOut,
   Plus,
   Trash2,
@@ -135,6 +145,10 @@ const Admin = () => {
   const [logSearch, setLogSearch] = useState("");
   const [logActionFilter, setLogActionFilter] = useState<string>("all");
   const [logTypeFilter, setLogTypeFilter] = useState<string>("all");
+
+  // Delete confirmation state
+  const [deletePhotoConfirm, setDeletePhotoConfirm] = useState<{ id: string; imageUrl: string; title: string } | null>(null);
+  const [deleteMemberConfirm, setDeleteMemberConfirm] = useState<{ id: string; photoUrl: string | null; name: string } | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -363,8 +377,14 @@ const Admin = () => {
     }
   };
 
-  const handleDelete = async (id: string, imageUrl: string) => {
-    if (!isAdmin) return;
+  const confirmDeletePhoto = (photo: GalleryPhoto) => {
+    setDeletePhotoConfirm({ id: photo.id, imageUrl: photo.image_url, title: photo.title });
+  };
+
+  const handleDelete = async () => {
+    if (!isAdmin || !deletePhotoConfirm) return;
+
+    const { id, imageUrl } = deletePhotoConfirm;
 
     try {
       const fileName = imageUrl.split("/").pop();
@@ -385,6 +405,7 @@ const Admin = () => {
       await logActivity("delete", "gallery_photo", id, photoToDelete?.title);
       
       toast({ title: "Foto berhasil dihapus!" });
+      setDeletePhotoConfirm(null);
       fetchPhotos();
       fetchActivityLogs();
     } catch (error: any) {
@@ -561,8 +582,14 @@ const Admin = () => {
     }
   };
 
-  const handleDeleteMember = async (id: string, photoUrl: string | null) => {
-    if (!isAdmin && !canManageTeam) return;
+  const confirmDeleteMember = (member: TeamMember) => {
+    setDeleteMemberConfirm({ id: member.id, photoUrl: member.photo_url, name: member.name });
+  };
+
+  const handleDeleteMember = async () => {
+    if ((!isAdmin && !canManageTeam) || !deleteMemberConfirm) return;
+
+    const { id, photoUrl } = deleteMemberConfirm;
 
     try {
       const memberToDelete = teamMembers.find(m => m.id === id);
@@ -584,6 +611,7 @@ const Admin = () => {
       await logActivity("delete", "team_member", id, memberToDelete?.name);
       
       toast({ title: "Anggota inti berhasil dihapus!" });
+      setDeleteMemberConfirm(null);
       fetchTeamMembers();
       if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
@@ -871,7 +899,7 @@ const Admin = () => {
                                 <Pencil size={16} />
                               </button>
                               <button
-                                onClick={() => handleDelete(photo.id, photo.image_url)}
+                                onClick={() => confirmDeletePhoto(photo)}
                                 className="w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
                               >
                                 <Trash2 size={16} />
@@ -1066,7 +1094,7 @@ const Admin = () => {
                                 key={member.id}
                                 member={member}
                                 onEdit={openEditMemberDialog}
-                                onDelete={handleDeleteMember}
+                                onDelete={confirmDeleteMember}
                               />
                             ))}
                           </div>
@@ -1447,7 +1475,7 @@ const Admin = () => {
                                   key={member.id}
                                   member={member}
                                   onEdit={openEditMemberDialog}
-                                  onDelete={handleDeleteMember}
+                                  onDelete={confirmDeleteMember}
                                 />
                               ))}
                             </div>
@@ -1576,6 +1604,42 @@ const Admin = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Photo Confirmation */}
+      <AlertDialog open={!!deletePhotoConfirm} onOpenChange={(open) => !open && setDeletePhotoConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Foto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus foto "{deletePhotoConfirm?.title}"? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Team Member Confirmation */}
+      <AlertDialog open={!!deleteMemberConfirm} onOpenChange={(open) => !open && setDeleteMemberConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Anggota Tim</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus "{deleteMemberConfirm?.name}" dari tim inti? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
