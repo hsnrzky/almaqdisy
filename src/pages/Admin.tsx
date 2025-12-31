@@ -115,6 +115,7 @@ const Admin = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<GalleryPhoto | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -132,6 +133,7 @@ const Admin = () => {
   const [memberRole, setMemberRole] = useState("");
   const [memberInstagram, setMemberInstagram] = useState("");
   const [memberPhotoFile, setMemberPhotoFile] = useState<File | null>(null);
+  const [memberPhotoPreview, setMemberPhotoPreview] = useState<string | null>(null);
   const [addingMember, setAddingMember] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [editMemberName, setEditMemberName] = useState("");
@@ -313,6 +315,45 @@ const Admin = () => {
     return `${Date.now()}.${safeExt}`;
   };
 
+  // Image preview handlers
+  const handleImageFileChange = (file: File | null) => {
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImageFile(null);
+      setImagePreview(null);
+    }
+  };
+
+  const handleMemberPhotoChange = (file: File | null) => {
+    if (file) {
+      setMemberPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMemberPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setMemberPhotoFile(null);
+      setMemberPhotoPreview(null);
+    }
+  };
+
+  const clearImagePreview = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  const clearMemberPhotoPreview = () => {
+    setMemberPhotoFile(null);
+    setMemberPhotoPreview(null);
+  };
+
   // Instagram username validation
   const validateInstagramUsername = (username: string): boolean => {
     if (!username) return true; // Optional field
@@ -363,7 +404,7 @@ const Admin = () => {
       toast({ title: "Foto berhasil diupload!" });
       setTitle("");
       setDescription("");
-      setImageFile(null);
+      clearImagePreview();
       fetchPhotos();
       if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
@@ -568,7 +609,7 @@ const Admin = () => {
       setMemberName("");
       setMemberRole("");
       setMemberInstagram("");
-      setMemberPhotoFile(null);
+      clearMemberPhotoPreview();
       fetchTeamMembers();
       if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
@@ -852,13 +893,30 @@ const Admin = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="image">Gambar</Label>
-                        <Input
-                          id="image"
-                          type="file"
-                          accept="image/jpeg,image/png,image/gif,image/webp"
-                          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                          required
-                        />
+                        {imagePreview ? (
+                          <div className="relative">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="w-full aspect-video object-cover rounded-lg border border-border"
+                            />
+                            <button
+                              type="button"
+                              onClick={clearImagePreview}
+                              className="absolute top-2 right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/80"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <Input
+                            id="image"
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={(e) => handleImageFileChange(e.target.files?.[0] || null)}
+                            required
+                          />
+                        )}
                         <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
                       </div>
                       <Button type="submit" className="w-full" disabled={uploading}>
@@ -1044,12 +1102,29 @@ const Admin = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="memberPhoto">Foto (opsional)</Label>
-                        <Input
-                          id="memberPhoto"
-                          type="file"
-                          accept="image/jpeg,image/png,image/gif,image/webp"
-                          onChange={(e) => setMemberPhotoFile(e.target.files?.[0] || null)}
-                        />
+                        {memberPhotoPreview ? (
+                          <div className="relative">
+                            <img
+                              src={memberPhotoPreview}
+                              alt="Preview"
+                              className="w-full aspect-square object-cover rounded-lg border border-border"
+                            />
+                            <button
+                              type="button"
+                              onClick={clearMemberPhotoPreview}
+                              className="absolute top-2 right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/80"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <Input
+                            id="memberPhoto"
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            onChange={(e) => handleMemberPhotoChange(e.target.files?.[0] || null)}
+                          />
+                        )}
                         <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
                       </div>
                       <Button type="submit" className="w-full" disabled={addingMember}>
@@ -1316,13 +1391,30 @@ const Admin = () => {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="image">Gambar</Label>
-                          <Input
-                            id="image"
-                            type="file"
-                            accept="image/jpeg,image/png,image/gif,image/webp"
-                            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                            required
-                          />
+                          {imagePreview ? (
+                            <div className="relative">
+                              <img
+                                src={imagePreview}
+                                alt="Preview"
+                                className="w-full aspect-video object-cover rounded-lg border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={clearImagePreview}
+                                className="absolute top-2 right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/80"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <Input
+                              id="image"
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              onChange={(e) => handleImageFileChange(e.target.files?.[0] || null)}
+                              required
+                            />
+                          )}
                           <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
                         </div>
                         <Button type="submit" className="w-full" disabled={uploading}>
@@ -1425,12 +1517,29 @@ const Admin = () => {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="memberPhoto">Foto (opsional)</Label>
-                          <Input
-                            id="memberPhoto"
-                            type="file"
-                            accept="image/jpeg,image/png,image/gif,image/webp"
-                            onChange={(e) => setMemberPhotoFile(e.target.files?.[0] || null)}
-                          />
+                          {memberPhotoPreview ? (
+                            <div className="relative">
+                              <img
+                                src={memberPhotoPreview}
+                                alt="Preview"
+                                className="w-full aspect-square object-cover rounded-lg border border-border"
+                              />
+                              <button
+                                type="button"
+                                onClick={clearMemberPhotoPreview}
+                                className="absolute top-2 right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/80"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ) : (
+                            <Input
+                              id="memberPhoto"
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              onChange={(e) => handleMemberPhotoChange(e.target.files?.[0] || null)}
+                            />
+                          )}
                           <p className="text-xs text-muted-foreground">Max 10MB (JPEG, PNG, GIF, WebP)</p>
                         </div>
                         <Button type="submit" className="w-full" disabled={addingMember}>
