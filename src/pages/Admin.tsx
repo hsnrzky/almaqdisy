@@ -29,6 +29,7 @@ import {
   Activity,
   Search,
   X,
+  GripVertical,
 } from "lucide-react";
 import {
   Table,
@@ -38,6 +39,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableTeamMember } from "@/components/SortableTeamMember";
 
 interface GalleryPhoto {
   id: string;
@@ -636,6 +653,55 @@ const Admin = () => {
     }
   };
 
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end for team members reordering
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = teamMembers.findIndex((m) => m.id === active.id);
+      const newIndex = teamMembers.findIndex((m) => m.id === over.id);
+
+      const reorderedMembers = arrayMove(teamMembers, oldIndex, newIndex);
+      setTeamMembers(reorderedMembers);
+
+      // Update display_order in database
+      try {
+        const updates = reorderedMembers.map((member, index) => ({
+          id: member.id,
+          name: member.name,
+          role: member.role,
+          instagram: member.instagram,
+          photo_url: member.photo_url,
+          display_order: index,
+        }));
+
+        for (const update of updates) {
+          await supabase
+            .from("team_members")
+            .update({ display_order: update.display_order })
+            .eq("id", update.id);
+        }
+
+        toast({ title: "Urutan anggota berhasil diperbarui!" });
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: "Gagal menyimpan urutan",
+          variant: "destructive",
+        });
+        fetchTeamMembers(); // Revert on error
+      }
+    }
+  };
+
   const scrollToGallery = () => {
     navigate("/#galeri");
   };
@@ -980,57 +1046,33 @@ const Admin = () => {
                       <p className="text-muted-foreground">Belum ada anggota inti</p>
                     </div>
                   ) : (
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      {teamMembers.map((member) => (
-                        <div
-                          key={member.id}
-                          className="group glass-card bg-card overflow-hidden"
+                    <>
+                      <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                        <GripVertical size={12} />
+                        Drag untuk mengubah urutan
+                      </p>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={teamMembers.map((m) => m.id)}
+                          strategy={rectSortingStrategy}
                         >
-                          <div className="aspect-square relative bg-muted">
-                            {member.photo_url ? (
-                              <img
-                                src={member.photo_url}
-                                alt={member.name}
-                                className="w-full h-full object-cover"
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            {teamMembers.map((member) => (
+                              <SortableTeamMember
+                                key={member.id}
+                                member={member}
+                                onEdit={openEditMemberDialog}
+                                onDelete={handleDeleteMember}
                               />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Users size={48} className="text-muted-foreground" />
-                              </div>
-                            )}
-                            <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => openEditMemberDialog(member)}
-                                className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
-                              >
-                                <Pencil size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteMember(member.id, member.photo_url)}
-                                className="w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                            ))}
                           </div>
-                          <div className="p-4">
-                            <h3 className="font-semibold text-foreground">{member.name}</h3>
-                            <p className="text-sm text-muted-foreground">{member.role}</p>
-                            {member.instagram && /^[a-zA-Z0-9._]{1,30}$/.test(member.instagram) && (
-                              <a
-                                href={`https://instagram.com/${encodeURIComponent(member.instagram)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-accent hover:underline flex items-center gap-1 mt-2"
-                              >
-                                <Instagram size={14} />
-                                @{member.instagram}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        </SortableContext>
+                      </DndContext>
+                    </>
                   )}
                 </div>
               </div>
@@ -1385,57 +1427,33 @@ const Admin = () => {
                         <p className="text-muted-foreground">Belum ada anggota inti</p>
                       </div>
                     ) : (
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        {teamMembers.map((member) => (
-                          <div
-                            key={member.id}
-                            className="group glass-card bg-card overflow-hidden"
+                      <>
+                        <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
+                          <GripVertical size={12} />
+                          Drag untuk mengubah urutan
+                        </p>
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext
+                            items={teamMembers.map((m) => m.id)}
+                            strategy={rectSortingStrategy}
                           >
-                            <div className="aspect-square relative bg-muted">
-                              {member.photo_url ? (
-                                <img
-                                  src={member.photo_url}
-                                  alt={member.name}
-                                  className="w-full h-full object-cover"
+                            <div className="grid sm:grid-cols-2 gap-4">
+                              {teamMembers.map((member) => (
+                                <SortableTeamMember
+                                  key={member.id}
+                                  member={member}
+                                  onEdit={openEditMemberDialog}
+                                  onDelete={handleDeleteMember}
                                 />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Users size={48} className="text-muted-foreground" />
-                                </div>
-                              )}
-                              <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => openEditMemberDialog(member)}
-                                  className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
-                                >
-                                  <Pencil size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteMember(member.id, member.photo_url)}
-                                  className="w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
+                              ))}
                             </div>
-                            <div className="p-4">
-                              <h3 className="font-semibold text-foreground">{member.name}</h3>
-                              <p className="text-sm text-muted-foreground">{member.role}</p>
-                              {member.instagram && /^[a-zA-Z0-9._]{1,30}$/.test(member.instagram) && (
-                                <a
-                                  href={`https://instagram.com/${encodeURIComponent(member.instagram)}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-accent hover:underline flex items-center gap-1 mt-2"
-                                >
-                                  <Instagram size={14} />
-                                  @{member.instagram}
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          </SortableContext>
+                        </DndContext>
+                      </>
                     )}
                   </div>
                 </div>
