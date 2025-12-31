@@ -14,7 +14,7 @@ interface TeamMember {
 interface SortableTeamMemberProps {
   member: TeamMember;
   onEdit: (member: TeamMember) => void;
-  onDelete: (id: string, photoUrl: string | null) => void;
+  onDelete: (member: TeamMember) => void;
 }
 
 export const SortableTeamMember = ({
@@ -73,7 +73,7 @@ export const SortableTeamMember = ({
             <Pencil size={16} />
           </button>
           <button
-            onClick={() => onDelete(member.id, member.photo_url)}
+            onClick={() => onDelete(member)}
             className="w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
           >
             <Trash2 size={16} />
