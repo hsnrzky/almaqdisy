@@ -40,6 +40,7 @@ import {
   Search,
   X,
   GripVertical,
+  Crop,
 } from "lucide-react";
 import {
   Table,
@@ -65,6 +66,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortableTeamMember } from "@/components/SortableTeamMember";
+import { ImageCropper } from "@/components/ImageCropper";
 
 interface GalleryPhoto {
   id: string;
@@ -151,6 +153,11 @@ const Admin = () => {
   // Delete confirmation state
   const [deletePhotoConfirm, setDeletePhotoConfirm] = useState<{ id: string; imageUrl: string; title: string } | null>(null);
   const [deleteMemberConfirm, setDeleteMemberConfirm] = useState<{ id: string; photoUrl: string | null; name: string } | null>(null);
+
+  // Image cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [cropperType, setCropperType] = useState<"gallery" | "member">("gallery");
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -315,13 +322,24 @@ const Admin = () => {
     return `${Date.now()}.${safeExt}`;
   };
 
-  // Image preview handlers
+  // Image preview handlers with crop
   const handleImageFileChange = (file: File | null) => {
     if (file) {
-      setImageFile(file);
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        toast({
+          title: "Error",
+          description: validationError,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setCropperImage(reader.result as string);
+        setCropperType("gallery");
+        setCropperOpen(true);
       };
       reader.readAsDataURL(file);
     } else {
@@ -332,16 +350,48 @@ const Admin = () => {
 
   const handleMemberPhotoChange = (file: File | null) => {
     if (file) {
-      setMemberPhotoFile(file);
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        toast({
+          title: "Error",
+          description: validationError,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setMemberPhotoPreview(reader.result as string);
+        setCropperImage(reader.result as string);
+        setCropperType("member");
+        setCropperOpen(true);
       };
       reader.readAsDataURL(file);
     } else {
       setMemberPhotoFile(null);
       setMemberPhotoPreview(null);
     }
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const file = new File([croppedBlob], `cropped_${Date.now()}.jpg`, { type: "image/jpeg" });
+    const previewUrl = URL.createObjectURL(croppedBlob);
+    
+    if (cropperType === "gallery") {
+      setImageFile(file);
+      setImagePreview(previewUrl);
+    } else {
+      setMemberPhotoFile(file);
+      setMemberPhotoPreview(previewUrl);
+    }
+    
+    setCropperOpen(false);
+    setCropperImage(null);
+  };
+
+  const handleCropperClose = () => {
+    setCropperOpen(false);
+    setCropperImage(null);
   };
 
   const clearImagePreview = () => {
@@ -892,13 +942,19 @@ const Admin = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="image">Gambar</Label>
+                        <Label htmlFor="image" className="flex items-center gap-2">
+                          Gambar
+                          <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Crop size={10} />
+                            1:1
+                          </span>
+                        </Label>
                         {imagePreview ? (
                           <div className="relative">
                             <img
                               src={imagePreview}
                               alt="Preview"
-                              className="w-full aspect-video object-cover rounded-lg border border-border"
+                              className="w-full aspect-square object-cover rounded-lg border border-border"
                             />
                             <button
                               type="button"
@@ -1101,7 +1157,13 @@ const Admin = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="memberPhoto">Foto (opsional)</Label>
+                        <Label htmlFor="memberPhoto" className="flex items-center gap-2">
+                          Foto (opsional)
+                          <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Crop size={10} />
+                            1:1
+                          </span>
+                        </Label>
                         {memberPhotoPreview ? (
                           <div className="relative">
                             <img
@@ -1390,13 +1452,19 @@ const Admin = () => {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="image">Gambar</Label>
+                          <Label htmlFor="image" className="flex items-center gap-2">
+                            Gambar
+                            <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Crop size={10} />
+                              1:1
+                            </span>
+                          </Label>
                           {imagePreview ? (
                             <div className="relative">
                               <img
                                 src={imagePreview}
                                 alt="Preview"
-                                className="w-full aspect-video object-cover rounded-lg border border-border"
+                                className="w-full aspect-square object-cover rounded-lg border border-border"
                               />
                               <button
                                 type="button"
@@ -1516,7 +1584,13 @@ const Admin = () => {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="memberPhoto">Foto (opsional)</Label>
+                          <Label htmlFor="memberPhoto" className="flex items-center gap-2">
+                            Foto (opsional)
+                            <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Crop size={10} />
+                              1:1
+                            </span>
+                          </Label>
                           {memberPhotoPreview ? (
                             <div className="relative">
                               <img
@@ -1749,6 +1823,17 @@ const Admin = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Image Cropper */}
+      {cropperImage && (
+        <ImageCropper
+          imageSrc={cropperImage}
+          open={cropperOpen}
+          onClose={handleCropperClose}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+        />
+      )}
     </div>
   );
 };
