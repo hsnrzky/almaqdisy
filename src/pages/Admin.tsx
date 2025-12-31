@@ -41,6 +41,8 @@ import {
   X,
   GripVertical,
   Crop,
+  Settings,
+  Construction,
 } from "lucide-react";
 import {
   Table,
@@ -150,6 +152,12 @@ const Admin = () => {
   const [logActionFilter, setLogActionFilter] = useState<string>("all");
   const [logTypeFilter, setLogTypeFilter] = useState<string>("all");
 
+  // Maintenance mode state
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState("Website sedang dalam perbaikan. Silakan kembali beberapa saat lagi.");
+  const [loadingMaintenance, setLoadingMaintenance] = useState(false);
+  const [savingMaintenance, setSavingMaintenance] = useState(false);
+
   // Delete confirmation state
   const [deletePhotoConfirm, setDeletePhotoConfirm] = useState<{ id: string; imageUrl: string; title: string } | null>(null);
   const [deleteMemberConfirm, setDeleteMemberConfirm] = useState<{ id: string; photoUrl: string | null; name: string } | null>(null);
@@ -215,17 +223,111 @@ const Admin = () => {
     setCanUpload(userCanUpload);
     setCanManageTeam(userCanManageTeam);
     
-    // If admin, fetch profiles, team members and activity logs
+    // If admin, fetch profiles, team members, activity logs and maintenance settings
     if (isUserAdmin) {
       fetchProfiles();
       fetchTeamMembers();
       fetchActivityLogs();
+      fetchMaintenanceSettings();
     } else if (userCanManageTeam) {
       // Non-admin with team management permission
       fetchTeamMembers();
     }
     
     setLoading(false);
+  };
+
+  const fetchMaintenanceSettings = async () => {
+    setLoadingMaintenance(true);
+    try {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "maintenance_mode")
+        .single();
+
+      if (error) throw error;
+
+      const settings = data?.value as unknown as { enabled: boolean; message: string };
+      setMaintenanceEnabled(settings?.enabled || false);
+      setMaintenanceMessage(settings?.message || "Website sedang dalam perbaikan. Silakan kembali beberapa saat lagi.");
+    } catch (error) {
+      console.error("Error fetching maintenance settings:", error);
+    } finally {
+      setLoadingMaintenance(false);
+    }
+  };
+
+  const handleMaintenanceToggle = async (enabled: boolean) => {
+    setSavingMaintenance(true);
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .update({
+          value: {
+            enabled,
+            message: maintenanceMessage,
+          },
+        })
+        .eq("key", "maintenance_mode");
+
+      if (error) throw error;
+
+      setMaintenanceEnabled(enabled);
+      
+      // Log activity
+      await supabase.from("activity_logs").insert({
+        user_id: user!.id,
+        user_email: user!.email,
+        action: enabled ? "enable" : "disable",
+        target_type: "maintenance",
+        target_name: "Maintenance Mode",
+      });
+
+      toast({
+        title: enabled ? "Mode Maintenance Diaktifkan" : "Mode Maintenance Dinonaktifkan",
+        description: enabled 
+          ? "Pengunjung akan melihat halaman maintenance" 
+          : "Website sekarang dapat diakses normal",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSavingMaintenance(false);
+    }
+  };
+
+  const handleMaintenanceMessageSave = async () => {
+    setSavingMaintenance(true);
+    try {
+      const { error } = await supabase
+        .from("site_settings")
+        .update({
+          value: {
+            enabled: maintenanceEnabled,
+            message: maintenanceMessage,
+          },
+        })
+        .eq("key", "maintenance_mode");
+
+      if (error) throw error;
+
+      toast({
+        title: "Pesan Maintenance Tersimpan",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSavingMaintenance(false);
+    }
   };
 
   const fetchPhotos = async () => {
@@ -889,7 +991,7 @@ const Admin = () => {
           </div>
         ) : isAdmin ? (
           <Tabs defaultValue="gallery" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 max-w-lg">
+            <TabsList className="grid w-full grid-cols-5 max-w-2xl">
               <TabsTrigger value="gallery" className="flex items-center gap-2">
                 <ImageIcon size={16} />
                 <span className="hidden sm:inline">Galeri</span>
@@ -905,6 +1007,10 @@ const Admin = () => {
               <TabsTrigger value="logs" className="flex items-center gap-2">
                 <Activity size={16} />
                 <span className="hidden sm:inline">Log</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Settings size={16} />
+                <span className="hidden sm:inline">Pengaturan</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1396,6 +1502,79 @@ const Admin = () => {
                     </>
                   );
                 })()}
+              </div>
+            </TabsContent>
+
+            {/* Settings Tab */}
+            <TabsContent value="settings">
+              <div className="max-w-2xl">
+                <div className="glass-card p-6 bg-card">
+                  <h2 className="text-lg font-semibold text-foreground mb-6 flex items-center gap-2">
+                    <Settings size={20} />
+                    Pengaturan Website
+                  </h2>
+                  
+                  {/* Maintenance Mode */}
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${maintenanceEnabled ? 'bg-destructive/20' : 'bg-primary/20'}`}>
+                          <Construction size={24} className={maintenanceEnabled ? 'text-destructive' : 'text-primary'} />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-foreground">Mode Maintenance</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {maintenanceEnabled 
+                              ? "Website sedang dalam mode maintenance" 
+                              : "Website dapat diakses normal"
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={maintenanceEnabled}
+                        onCheckedChange={handleMaintenanceToggle}
+                        disabled={savingMaintenance || loadingMaintenance}
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label htmlFor="maintenance-message">Pesan Maintenance</Label>
+                      <Textarea
+                        id="maintenance-message"
+                        value={maintenanceMessage}
+                        onChange={(e) => setMaintenanceMessage(e.target.value)}
+                        placeholder="Pesan yang akan ditampilkan saat maintenance"
+                        rows={3}
+                        maxLength={500}
+                      />
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground">
+                          {maintenanceMessage.length}/500 karakter
+                        </p>
+                        <Button 
+                          onClick={handleMaintenanceMessageSave} 
+                          disabled={savingMaintenance}
+                          size="sm"
+                        >
+                          {savingMaintenance ? "Menyimpan..." : "Simpan Pesan"}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {maintenanceEnabled && (
+                      <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <p className="text-sm text-destructive font-medium flex items-center gap-2">
+                          <Construction size={16} />
+                          Website sedang dalam mode maintenance!
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Pengunjung akan melihat halaman maintenance. Admin tetap dapat mengakses panel ini.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
