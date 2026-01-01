@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import LazyImage from "./LazyImage";
 
 interface GalleryPhoto {
   id: string;
@@ -96,8 +97,8 @@ const GallerySection = () => {
                   onClick={() => openLightbox(item.id)}
                   className="group relative overflow-hidden rounded-2xl aspect-square hover:shadow-medium transition-all duration-300"
                 >
-                  {/* Image */}
-                  <img
+                  {/* Image with Lazy Loading */}
+                  <LazyImage
                     src={item.image_url}
                     alt={item.title}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
