@@ -9,10 +9,13 @@ interface GalleryPhoto {
   image_url: string;
 }
 
+const PHOTOS_PER_PAGE = 6;
+
 const GallerySection = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchPhotos();
@@ -28,6 +31,17 @@ const GallerySection = () => {
       setPhotos(data);
     }
     setLoading(false);
+  };
+
+  const totalPages = Math.ceil(photos.length / PHOTOS_PER_PAGE);
+  const paginatedPhotos = photos.slice(
+    (currentPage - 1) * PHOTOS_PER_PAGE,
+    currentPage * PHOTOS_PER_PAGE
+  );
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    document.getElementById('galeri')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const openLightbox = (id: string) => setSelectedImage(id);
@@ -74,39 +88,76 @@ const GallerySection = () => {
             <p className="text-muted-foreground">Belum ada foto di galeri</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            {photos.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => openLightbox(item.id)}
-                className="group relative overflow-hidden rounded-2xl aspect-square hover:shadow-medium transition-all duration-300"
-              >
-                {/* Image */}
-                <img
-                  src={item.image_url}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              {paginatedPhotos.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => openLightbox(item.id)}
+                  className="group relative overflow-hidden rounded-2xl aspect-square hover:shadow-medium transition-all duration-300"
+                >
+                  {/* Image */}
+                  <img
+                    src={item.image_url}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                    <h4 className="text-primary-foreground font-semibold text-sm md:text-base">
-                      {item.title}
-                    </h4>
-                    {item.description && (
-                      <p className="text-primary-foreground/70 text-xs mt-1 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+                      <h4 className="text-primary-foreground font-semibold text-sm md:text-base">
+                        {item.title}
+                      </h4>
+                      {item.description && (
+                        <p className="text-primary-foreground/70 text-xs mt-1 line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Border Effect */}
-                <div className="absolute inset-0 border-2 border-transparent group-hover:border-accent/50 rounded-2xl transition-colors" />
-              </button>
-            ))}
-          </div>
+                  {/* Border Effect */}
+                  <div className="absolute inset-0 border-2 border-transparent group-hover:border-accent/50 rounded-2xl transition-colors" />
+                </button>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center hover:bg-accent/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={20} className="text-accent" />
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors font-medium ${
+                      currentPage === page
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-accent/10 text-accent hover:bg-accent/20"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center hover:bg-accent/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={20} className="text-accent" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
