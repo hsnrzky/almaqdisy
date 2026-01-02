@@ -1113,13 +1113,23 @@ const Admin = () => {
                             />
                             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
-                                onClick={() => openEditDialog(photo)}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openEditDialog(photo);
+                                }}
                                 className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
                               >
                                 <Pencil size={16} />
                               </button>
                               <button
-                                onClick={() => confirmDeletePhoto(photo)}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  confirmDeletePhoto(photo);
+                                }}
                                 className="w-8 h-8 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
                               >
                                 <Trash2 size={16} />
