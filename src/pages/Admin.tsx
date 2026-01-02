@@ -2004,15 +2004,13 @@ const Admin = () => {
       </AlertDialog>
 
       {/* Image Cropper */}
-      {cropperImage && (
-        <ImageCropper
-          imageSrc={cropperImage}
-          open={cropperOpen}
-          onClose={handleCropperClose}
-          onCropComplete={handleCropComplete}
-          aspectRatio={1}
-        />
-      )}
+      <ImageCropper
+        imageSrc={cropperImage || ""}
+        open={cropperOpen && !!cropperImage}
+        onClose={handleCropperClose}
+        onCropComplete={handleCropComplete}
+        aspectRatio={1}
+      />
     </div>
   );
 };
