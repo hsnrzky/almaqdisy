@@ -68,7 +68,7 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortableTeamMember } from "@/components/SortableTeamMember";
-import { ImageCropper } from "@/components/ImageCropper";
+
 
 interface GalleryPhoto {
   id: string;
@@ -161,11 +161,6 @@ const Admin = () => {
   // Delete confirmation state
   const [deletePhotoConfirm, setDeletePhotoConfirm] = useState<{ id: string; imageUrl: string; title: string } | null>(null);
   const [deleteMemberConfirm, setDeleteMemberConfirm] = useState<{ id: string; photoUrl: string | null; name: string } | null>(null);
-
-  // Image cropper state
-  const [cropperOpen, setCropperOpen] = useState(false);
-  const [cropperImage, setCropperImage] = useState<string | null>(null);
-  const [cropperType, setCropperType] = useState<"gallery" | "member">("gallery");
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -424,7 +419,7 @@ const Admin = () => {
     return `${Date.now()}.${safeExt}`;
   };
 
-  // Image preview handlers with crop
+  // Image preview handlers (simplified - no cropper)
   const handleImageFileChange = (file: File | null) => {
     if (file) {
       const validationError = validateImageFile(file);
@@ -436,14 +431,8 @@ const Admin = () => {
         });
         return;
       }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCropperImage(reader.result as string);
-        setCropperType("gallery");
-        setCropperOpen(true);
-      };
-      reader.readAsDataURL(file);
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     } else {
       setImageFile(null);
       setImagePreview(null);
@@ -461,39 +450,12 @@ const Admin = () => {
         });
         return;
       }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCropperImage(reader.result as string);
-        setCropperType("member");
-        setCropperOpen(true);
-      };
-      reader.readAsDataURL(file);
+      setMemberPhotoFile(file);
+      setMemberPhotoPreview(URL.createObjectURL(file));
     } else {
       setMemberPhotoFile(null);
       setMemberPhotoPreview(null);
     }
-  };
-
-  const handleCropComplete = (croppedBlob: Blob) => {
-    const file = new File([croppedBlob], `cropped_${Date.now()}.jpg`, { type: "image/jpeg" });
-    const previewUrl = URL.createObjectURL(croppedBlob);
-    
-    if (cropperType === "gallery") {
-      setImageFile(file);
-      setImagePreview(previewUrl);
-    } else {
-      setMemberPhotoFile(file);
-      setMemberPhotoPreview(previewUrl);
-    }
-    
-    setCropperOpen(false);
-    setCropperImage(null);
-  };
-
-  const handleCropperClose = () => {
-    setCropperOpen(false);
-    setCropperImage(null);
   };
 
   const clearImagePreview = () => {
@@ -2028,14 +1990,6 @@ const Admin = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Image Cropper */}
-      <ImageCropper
-        imageSrc={cropperImage || ""}
-        open={cropperOpen && !!cropperImage}
-        onClose={handleCropperClose}
-        onCropComplete={handleCropComplete}
-        aspectRatio={1}
-      />
     </div>
   );
 };
