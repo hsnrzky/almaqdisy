@@ -1842,7 +1842,7 @@ const Admin = () => {
 
       {/* Edit Photo Dialog */}
       <Dialog open={!!editingPhoto} onOpenChange={(open) => !open && closeEditDialog()}>
-        <DialogContent>
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Edit Foto</DialogTitle>
           </DialogHeader>
@@ -1892,7 +1892,7 @@ const Admin = () => {
 
       {/* Edit Member Dialog */}
       <Dialog open={!!editingMember} onOpenChange={(open) => !open && closeEditMemberDialog()}>
-        <DialogContent>
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Edit Anggota Inti</DialogTitle>
           </DialogHeader>
@@ -1955,7 +1955,7 @@ const Admin = () => {
       </Dialog>
 
       {/* Delete Photo Confirmation */}
-      <AlertDialog open={!!deletePhotoConfirm} onOpenChange={(open) => !open && setDeletePhotoConfirm(null)}>
+      <AlertDialog open={!!deletePhotoConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Foto</AlertDialogTitle>
@@ -1964,16 +1964,22 @@ const Admin = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Hapus
+            <AlertDialogCancel asChild>
+              <Button type="button" variant="outline" onClick={() => setDeletePhotoConfirm(null)}>
+                Batal
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button type="button" variant="destructive" onClick={handleDelete}>
+                Hapus
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Delete Team Member Confirmation */}
-      <AlertDialog open={!!deleteMemberConfirm} onOpenChange={(open) => !open && setDeleteMemberConfirm(null)}>
+      <AlertDialog open={!!deleteMemberConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Anggota Tim</AlertDialogTitle>
@@ -1982,9 +1988,15 @@ const Admin = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMember} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Hapus
+            <AlertDialogCancel asChild>
+              <Button type="button" variant="outline" onClick={() => setDeleteMemberConfirm(null)}>
+                Batal
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button type="button" variant="destructive" onClick={handleDeleteMember}>
+                Hapus
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
