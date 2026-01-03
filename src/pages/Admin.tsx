@@ -571,7 +571,11 @@ const Admin = () => {
   };
 
   const confirmDeletePhoto = (photo: GalleryPhoto) => {
-    setDeletePhotoConfirm({ id: photo.id, imageUrl: photo.image_url, title: photo.title });
+    // Defer open to next tick so Radix doesn't immediately dismiss it
+    // due to the same pointer event that triggered this action.
+    setTimeout(() => {
+      setDeletePhotoConfirm({ id: photo.id, imageUrl: photo.image_url, title: photo.title });
+    }, 0);
   };
 
   const handleDelete = async () => {
@@ -581,13 +585,13 @@ const Admin = () => {
 
     try {
       const fileName = imageUrl.split("/").pop();
-      
+
       if (fileName) {
         await supabase.storage.from("gallery").remove([fileName]);
       }
 
-      const photoToDelete = photos.find(p => p.id === id);
-      
+      const photoToDelete = photos.find((p) => p.id === id);
+
       const { error } = await supabase
         .from("gallery_photos")
         .delete()
@@ -596,7 +600,7 @@ const Admin = () => {
       if (error) throw error;
 
       await logActivity("delete", "gallery_photo", id, photoToDelete?.title);
-      
+
       toast({ title: "Foto berhasil dihapus!" });
       setDeletePhotoConfirm(null);
       fetchPhotos();
@@ -611,9 +615,13 @@ const Admin = () => {
   };
 
   const openEditDialog = (photo: GalleryPhoto) => {
-    setEditingPhoto(photo);
     setEditTitle(photo.title);
     setEditDescription(photo.description || "");
+
+    // Defer open to next tick so it doesn't instantly close.
+    setTimeout(() => {
+      setEditingPhoto(photo);
+    }, 0);
   };
 
   const closeEditDialog = () => {
@@ -776,7 +784,10 @@ const Admin = () => {
   };
 
   const confirmDeleteMember = (member: TeamMember) => {
-    setDeleteMemberConfirm({ id: member.id, photoUrl: member.photo_url, name: member.name });
+    // Defer open to next tick to avoid instant close.
+    setTimeout(() => {
+      setDeleteMemberConfirm({ id: member.id, photoUrl: member.photo_url, name: member.name });
+    }, 0);
   };
 
   const handleDeleteMember = async () => {
@@ -785,8 +796,8 @@ const Admin = () => {
     const { id, photoUrl } = deleteMemberConfirm;
 
     try {
-      const memberToDelete = teamMembers.find(m => m.id === id);
-      
+      const memberToDelete = teamMembers.find((m) => m.id === id);
+
       if (photoUrl) {
         const fileName = photoUrl.split("/").pop();
         if (fileName) {
@@ -802,7 +813,7 @@ const Admin = () => {
       if (error) throw error;
 
       await logActivity("delete", "team_member", id, memberToDelete?.name);
-      
+
       toast({ title: "Anggota inti berhasil dihapus!" });
       setDeleteMemberConfirm(null);
       fetchTeamMembers();
@@ -817,10 +828,14 @@ const Admin = () => {
   };
 
   const openEditMemberDialog = (member: TeamMember) => {
-    setEditingMember(member);
     setEditMemberName(member.name);
     setEditMemberRole(member.role);
     setEditMemberInstagram(member.instagram || "");
+
+    // Defer open to next tick so it doesn't instantly close.
+    setTimeout(() => {
+      setEditingMember(member);
+    }, 0);
   };
 
   const closeEditMemberDialog = () => {
