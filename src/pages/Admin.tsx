@@ -9,22 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { User, Session } from "@supabase/supabase-js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { AdminModal } from "@/components/AdminModal";
 import {
   LogOut,
   Plus,
@@ -1840,167 +1825,176 @@ const Admin = () => {
         )}
       </main>
 
-      {/* Edit Photo Dialog */}
-      <Dialog open={!!editingPhoto} onOpenChange={(open) => !open && closeEditDialog()}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Edit Foto</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleUpdate} className="space-y-4">
-            {editingPhoto && (
-              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                <img
-                  src={editingPhoto.image_url}
-                  alt={editingPhoto.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="edit-title">Judul</Label>
-              <Input
-                id="edit-title"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Judul foto"
-                maxLength={100}
-                required
+      {/* Edit Photo Modal */}
+      <AdminModal open={!!editingPhoto} title="Edit Foto" onClose={closeEditDialog}>
+        <form onSubmit={handleUpdate} className="space-y-4">
+          {editingPhoto && (
+            <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+              <img
+                src={editingPhoto.image_url}
+                alt={editingPhoto.title}
+                className="w-full h-full object-cover"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-description">Deskripsi (opsional)</Label>
-              <Textarea
-                id="edit-description"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Deskripsi foto"
-                maxLength={500}
-                rows={3}
-              />
-            </div>
-            <div className="flex gap-3 justify-end">
-              <Button type="button" variant="outline" onClick={closeEditDialog}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={updating}>
-                {updating ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="edit-title">Judul</Label>
+            <Input
+              id="edit-title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              placeholder="Judul foto"
+              maxLength={100}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-description">Deskripsi (opsional)</Label>
+            <Textarea
+              id="edit-description"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Deskripsi foto"
+              maxLength={500}
+              rows={3}
+            />
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button type="button" variant="outline" onClick={closeEditDialog}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={updating}>
+              {updating ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        </form>
+      </AdminModal>
 
-      {/* Edit Member Dialog */}
-      <Dialog open={!!editingMember} onOpenChange={(open) => !open && closeEditMemberDialog()}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Edit Anggota Inti</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleUpdateMember} className="space-y-4">
-            {editingMember?.photo_url && (
-              <div className="aspect-square w-32 mx-auto rounded-lg overflow-hidden bg-muted">
-                <img
-                  src={editingMember.photo_url}
-                  alt={editingMember.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="edit-member-name">Nama</Label>
-              <Input
-                id="edit-member-name"
-                value={editMemberName}
-                onChange={(e) => setEditMemberName(e.target.value)}
-                placeholder="Nama anggota"
-                maxLength={100}
-                required
+      {/* Edit Member Modal */}
+      <AdminModal
+        open={!!editingMember}
+        title="Edit Anggota Inti"
+        onClose={closeEditMemberDialog}
+      >
+        <form onSubmit={handleUpdateMember} className="space-y-4">
+          {editingMember?.photo_url && (
+            <div className="aspect-square w-32 mx-auto rounded-lg overflow-hidden bg-muted">
+              <img
+                src={editingMember.photo_url}
+                alt={editingMember.name}
+                className="w-full h-full object-cover"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-member-role">Jabatan</Label>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="edit-member-name">Nama</Label>
+            <Input
+              id="edit-member-name"
+              value={editMemberName}
+              onChange={(e) => setEditMemberName(e.target.value)}
+              placeholder="Nama anggota"
+              maxLength={100}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-member-role">Jabatan</Label>
+            <Input
+              id="edit-member-role"
+              value={editMemberRole}
+              onChange={(e) => setEditMemberRole(e.target.value)}
+              placeholder="Jabatan/Role"
+              maxLength={100}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-member-instagram">Instagram (opsional)</Label>
+            <div className="relative">
+              <Instagram
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
               <Input
-                id="edit-member-role"
-                value={editMemberRole}
-                onChange={(e) => setEditMemberRole(e.target.value)}
-                placeholder="Jabatan/Role"
-                maxLength={100}
-                required
+                id="edit-member-instagram"
+                value={editMemberInstagram}
+                onChange={(e) => setEditMemberInstagram(e.target.value)}
+                placeholder="username_instagram"
+                className="pl-10"
+                maxLength={50}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-member-instagram">Instagram (opsional)</Label>
-              <div className="relative">
-                <Instagram size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="edit-member-instagram"
-                  value={editMemberInstagram}
-                  onChange={(e) => setEditMemberInstagram(e.target.value)}
-                  placeholder="username_instagram"
-                  className="pl-10"
-                  maxLength={50}
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <Button type="button" variant="outline" onClick={closeEditMemberDialog}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={updatingMember}>
-                {updatingMember ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeEditMemberDialog}
+            >
+              Batal
+            </Button>
+            <Button type="submit" disabled={updatingMember}>
+              {updatingMember ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </div>
+        </form>
+      </AdminModal>
 
       {/* Delete Photo Confirmation */}
-      <AlertDialog open={!!deletePhotoConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Foto</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus foto "{deletePhotoConfirm?.title}"? Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button type="button" variant="outline" onClick={() => setDeletePhotoConfirm(null)}>
-                Batal
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button type="button" variant="destructive" onClick={handleDelete}>
-                Hapus
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AdminModal
+        open={!!deletePhotoConfirm}
+        title="Hapus Foto"
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus foto "{deletePhotoConfirm?.title}"?
+            Tindakan ini tidak dapat dibatalkan.
+          </>
+        }
+        onClose={() => setDeletePhotoConfirm(null)}
+      >
+        <div className="flex gap-3 justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDeletePhotoConfirm(null)}
+          >
+            Batal
+          </Button>
+          <Button type="button" variant="destructive" onClick={handleDelete}>
+            Hapus
+          </Button>
+        </div>
+      </AdminModal>
 
       {/* Delete Team Member Confirmation */}
-      <AlertDialog open={!!deleteMemberConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Anggota Tim</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus "{deleteMemberConfirm?.name}" dari tim inti? Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button type="button" variant="outline" onClick={() => setDeleteMemberConfirm(null)}>
-                Batal
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button type="button" variant="destructive" onClick={handleDeleteMember}>
-                Hapus
-              </Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AdminModal
+        open={!!deleteMemberConfirm}
+        title="Hapus Anggota Tim"
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus "{deleteMemberConfirm?.name}" dari tim
+            inti? Tindakan ini tidak dapat dibatalkan.
+          </>
+        }
+        onClose={() => setDeleteMemberConfirm(null)}
+      >
+        <div className="flex gap-3 justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDeleteMemberConfirm(null)}
+          >
+            Batal
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDeleteMember}
+          >
+            Hapus
+          </Button>
+        </div>
+      </AdminModal>
 
     </div>
   );
