@@ -5,12 +5,18 @@ import { Slider } from "@/components/ui/slider";
 import { AdminModal } from "@/components/AdminModal";
 import { ZoomIn, ZoomOut, RotateCw, Check, X } from "lucide-react";
 
+interface AspectRatioOption {
+  label: string;
+  value: number;
+}
+
 interface ImageCropperProps {
   imageSrc: string;
   open: boolean;
   onClose: () => void;
   onCropComplete: (croppedImageBlob: Blob) => void;
-  aspectRatio?: number;
+  aspectRatioOptions?: AspectRatioOption[];
+  defaultAspectRatio?: number;
 }
 
 async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
@@ -59,18 +65,27 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
   });
 }
 
+const DEFAULT_ASPECT_OPTIONS: AspectRatioOption[] = [
+  { label: "1:1", value: 1 },
+];
+
 export function ImageCropper({
   imageSrc,
   open,
   onClose,
   onCropComplete,
-  aspectRatio = 1,
+  aspectRatioOptions = DEFAULT_ASPECT_OPTIONS,
+  defaultAspectRatio,
 }: ImageCropperProps) {
+  const initialRatio = defaultAspectRatio ?? aspectRatioOptions[0]?.value ?? 1;
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState(initialRatio);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [processing, setProcessing] = useState(false);
+
+  const showAspectOptions = aspectRatioOptions.length > 1;
 
   const onCropChange = useCallback((crop: { x: number; y: number }) => {
     setCrop(crop);
@@ -110,10 +125,12 @@ export function ImageCropper({
     onClose();
   };
 
+  const currentLabel = aspectRatioOptions.find(opt => opt.value === aspectRatio)?.label || "Custom";
+
   return (
     <AdminModal
       open={open}
-      title="Crop Foto (1:1)"
+      title={`Crop Foto${showAspectOptions ? ` (${currentLabel})` : " (1:1)"}`}
       onClose={handleClose}
       className="sm:max-w-lg"
     >
@@ -134,6 +151,22 @@ export function ImageCropper({
         </div>
 
         <div className="space-y-4">
+          {showAspectOptions && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground">Rasio:</span>
+              {aspectRatioOptions.map((option) => (
+                <Button
+                  key={option.label}
+                  variant={aspectRatio === option.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setAspectRatio(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-4">
             <ZoomOut size={18} className="text-muted-foreground" />
             <Slider
