@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import Cropper, { Area } from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AdminModal } from "@/components/AdminModal";
 import { ZoomIn, ZoomOut, RotateCw, Check, X } from "lucide-react";
 
 interface ImageCropperProps {
@@ -111,14 +111,13 @@ export function ImageCropper({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Crop Foto (1:1)
-          </DialogTitle>
-        </DialogHeader>
-        
+    <AdminModal
+      open={open}
+      title="Crop Foto (1:1)"
+      onClose={handleClose}
+      className="sm:max-w-lg"
+    >
+      <div className="space-y-4">
         <div className="relative w-full h-64 sm:h-80 bg-muted rounded-lg overflow-hidden">
           <Cropper
             image={imageSrc}
@@ -134,7 +133,7 @@ export function ImageCropper({
           />
         </div>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4">
           <div className="flex items-center gap-4">
             <ZoomOut size={18} className="text-muted-foreground" />
             <Slider
@@ -147,7 +146,7 @@ export function ImageCropper({
             />
             <ZoomIn size={18} className="text-muted-foreground" />
           </div>
-          
+
           <div className="flex items-center justify-center">
             <Button
               variant="outline"
@@ -160,7 +159,7 @@ export function ImageCropper({
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
+        <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={handleClose} disabled={processing}>
             <X size={16} className="mr-2" />
             Batal
@@ -169,8 +168,8 @@ export function ImageCropper({
             <Check size={16} className="mr-2" />
             {processing ? "Memproses..." : "Terapkan"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </div>
+    </AdminModal>
   );
 }

@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { User, Session } from "@supabase/supabase-js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminModal } from "@/components/AdminModal";
+import { ImageCropper } from "@/components/ImageCropper";
 import {
   LogOut,
   Plus,
@@ -146,6 +147,11 @@ const Admin = () => {
   // Delete confirmation state
   const [deletePhotoConfirm, setDeletePhotoConfirm] = useState<{ id: string; imageUrl: string; title: string } | null>(null);
   const [deleteMemberConfirm, setDeleteMemberConfirm] = useState<{ id: string; photoUrl: string | null; name: string } | null>(null);
+
+  // Cropper state (separate flow)
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [cropperType, setCropperType] = useState<"gallery" | "team">("gallery");
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -404,7 +410,7 @@ const Admin = () => {
     return `${Date.now()}.${safeExt}`;
   };
 
-  // Image preview handlers (simplified - no cropper)
+  // Image preview handlers with cropper flow
   const handleImageFileChange = (file: File | null) => {
     if (file) {
       const validationError = validateImageFile(file);
@@ -416,8 +422,10 @@ const Admin = () => {
         });
         return;
       }
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      // Open cropper with the selected image
+      setCropperImage(URL.createObjectURL(file));
+      setCropperType("gallery");
+      setCropperOpen(true);
     } else {
       setImageFile(null);
       setImagePreview(null);
@@ -435,12 +443,38 @@ const Admin = () => {
         });
         return;
       }
-      setMemberPhotoFile(file);
-      setMemberPhotoPreview(URL.createObjectURL(file));
+      // Open cropper with the selected image
+      setCropperImage(URL.createObjectURL(file));
+      setCropperType("team");
+      setCropperOpen(true);
     } else {
       setMemberPhotoFile(null);
       setMemberPhotoPreview(null);
     }
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], `cropped_${Date.now()}.jpg`, {
+      type: "image/jpeg",
+    });
+    const previewUrl = URL.createObjectURL(croppedBlob);
+
+    if (cropperType === "gallery") {
+      setImageFile(croppedFile);
+      setImagePreview(previewUrl);
+    } else {
+      setMemberPhotoFile(croppedFile);
+      setMemberPhotoPreview(previewUrl);
+    }
+
+    // Close cropper
+    setCropperOpen(false);
+    setCropperImage(null);
+  };
+
+  const handleCropperClose = () => {
+    setCropperOpen(false);
+    setCropperImage(null);
   };
 
   const clearImagePreview = () => {
@@ -1995,6 +2029,17 @@ const Admin = () => {
           </Button>
         </div>
       </AdminModal>
+
+      {/* Image Cropper Modal (separate flow) */}
+      {cropperImage && (
+        <ImageCropper
+          imageSrc={cropperImage}
+          open={cropperOpen}
+          onClose={handleCropperClose}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+        />
+      )}
 
     </div>
   );
