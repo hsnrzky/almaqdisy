@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Pencil, Trash2, Instagram, GripVertical } from "lucide-react";
+import { Pencil, Trash2, Instagram, GripVertical, Eye } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -15,12 +15,14 @@ interface SortableTeamMemberProps {
   member: TeamMember;
   onEdit: (member: TeamMember) => void;
   onDelete: (member: TeamMember) => void;
+  onPreview?: (src: string, alt: string) => void;
 }
 
 export const SortableTeamMember = ({
   member,
   onEdit,
   onDelete,
+  onPreview,
 }: SortableTeamMemberProps) => {
   const {
     attributes,
@@ -66,6 +68,20 @@ export const SortableTeamMember = ({
         </div>
         {/* Actions */}
         <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {member.photo_url && onPreview && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onPreview(member.photo_url!, member.name);
+              }}
+              className="w-8 h-8 bg-background/80 text-foreground rounded-full flex items-center justify-center hover:bg-background"
+              title="Lihat Fullscreen"
+            >
+              <Eye size={16} />
+            </button>
+          )}
           <button
             type="button"
             onClick={(e) => {
