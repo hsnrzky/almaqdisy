@@ -112,6 +112,8 @@ const Admin = () => {
   const [editingPhoto, setEditingPhoto] = useState<GalleryPhoto | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
 
   // Users state
@@ -131,6 +133,8 @@ const Admin = () => {
   const [editMemberName, setEditMemberName] = useState("");
   const [editMemberRole, setEditMemberRole] = useState("");
   const [editMemberInstagram, setEditMemberInstagram] = useState("");
+  const [editMemberPhotoFile, setEditMemberPhotoFile] = useState<File | null>(null);
+  const [editMemberPhotoPreview, setEditMemberPhotoPreview] = useState<string | null>(null);
   const [updatingMember, setUpdatingMember] = useState(false);
 
   // Activity logs state
@@ -153,7 +157,7 @@ const Admin = () => {
   // Cropper state (separate flow)
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperImage, setCropperImage] = useState<string | null>(null);
-  const [cropperType, setCropperType] = useState<"gallery" | "team">("gallery");
+  const [cropperType, setCropperType] = useState<"gallery" | "team" | "edit-gallery" | "edit-team">("gallery");
 
   // Fullscreen image preview state
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
@@ -467,9 +471,15 @@ const Admin = () => {
     if (cropperType === "gallery") {
       setImageFile(croppedFile);
       setImagePreview(previewUrl);
-    } else {
+    } else if (cropperType === "team") {
       setMemberPhotoFile(croppedFile);
       setMemberPhotoPreview(previewUrl);
+    } else if (cropperType === "edit-gallery") {
+      setEditImageFile(croppedFile);
+      setEditImagePreview(previewUrl);
+    } else if (cropperType === "edit-team") {
+      setEditMemberPhotoFile(croppedFile);
+      setEditMemberPhotoPreview(previewUrl);
     }
 
     // Close cropper
@@ -614,6 +624,25 @@ const Admin = () => {
     setEditingPhoto(null);
     setEditTitle("");
     setEditDescription("");
+    setEditImageFile(null);
+    setEditImagePreview(null);
+  };
+
+  const handleEditImageFileChange = (file: File | null) => {
+    if (file) {
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        toast({
+          title: "Error",
+          description: validationError,
+          variant: "destructive",
+        });
+        return;
+      }
+      setCropperImage(URL.createObjectURL(file));
+      setCropperType("edit-gallery");
+      setCropperOpen(true);
+    }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -622,19 +651,48 @@ const Admin = () => {
 
     setUpdating(true);
     try {
+      let newImageUrl = editingPhoto.image_url;
+
+      // If there's a new image, upload it
+      if (editImageFile) {
+        // Delete old image
+        const oldFileName = editingPhoto.image_url.split("/").pop();
+        if (oldFileName) {
+          await supabase.storage.from("gallery").remove([oldFileName]);
+        }
+
+        // Upload new image
+        const fileName = sanitizeFileName(editImageFile.name);
+        const { error: uploadError } = await supabase.storage
+          .from("gallery")
+          .upload(fileName, editImageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("gallery")
+          .getPublicUrl(fileName);
+
+        newImageUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from("gallery_photos")
         .update({
           title: editTitle.trim(),
           description: editDescription?.trim() || null,
+          image_url: newImageUrl,
         })
         .eq("id", editingPhoto.id);
 
       if (error) throw error;
 
+      await logActivity("update", "gallery_photo", editingPhoto.id, editTitle.trim());
+
       toast({ title: "Foto berhasil diperbarui!" });
       closeEditDialog();
       fetchPhotos();
+      if (isAdmin) fetchActivityLogs();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -829,6 +887,25 @@ const Admin = () => {
     setEditMemberName("");
     setEditMemberRole("");
     setEditMemberInstagram("");
+    setEditMemberPhotoFile(null);
+    setEditMemberPhotoPreview(null);
+  };
+
+  const handleEditMemberPhotoChange = (file: File | null) => {
+    if (file) {
+      const validationError = validateImageFile(file);
+      if (validationError) {
+        toast({
+          title: "Error",
+          description: validationError,
+          variant: "destructive",
+        });
+        return;
+      }
+      setCropperImage(URL.createObjectURL(file));
+      setCropperType("edit-team");
+      setCropperOpen(true);
+    }
   };
 
   const handleUpdateMember = async (e: React.FormEvent) => {
@@ -847,12 +924,40 @@ const Admin = () => {
 
     setUpdatingMember(true);
     try {
+      let newPhotoUrl = editingMember.photo_url;
+
+      // If there's a new photo, upload it
+      if (editMemberPhotoFile) {
+        // Delete old photo if exists
+        if (editingMember.photo_url) {
+          const oldFileName = editingMember.photo_url.split("/").pop();
+          if (oldFileName) {
+            await supabase.storage.from("gallery").remove([oldFileName]);
+          }
+        }
+
+        // Upload new photo
+        const fileName = `team_${sanitizeFileName(editMemberPhotoFile.name)}`;
+        const { error: uploadError } = await supabase.storage
+          .from("gallery")
+          .upload(fileName, editMemberPhotoFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("gallery")
+          .getPublicUrl(fileName);
+
+        newPhotoUrl = urlData.publicUrl;
+      }
+
       const { error } = await supabase
         .from("team_members")
         .update({
           name: editMemberName.trim(),
           role: editMemberRole.trim(),
           instagram: editMemberInstagram?.trim() || null,
+          photo_url: newPhotoUrl,
         })
         .eq("id", editingMember.id);
 
@@ -1890,12 +1995,61 @@ const Admin = () => {
       <AdminModal open={!!editingPhoto} title="Edit Foto" onClose={closeEditDialog}>
         <form onSubmit={handleUpdate} className="space-y-4">
           {editingPhoto && (
-            <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-              <img
-                src={editingPhoto.image_url}
-                alt={editingPhoto.title}
-                className="w-full h-full object-cover"
-              />
+            <div className="space-y-2">
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted relative group">
+                <img
+                  src={editImagePreview || editingPhoto.image_url}
+                  alt={editingPhoto.title}
+                  className="w-full h-full object-cover"
+                />
+                {/* Preview button */}
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage({ 
+                    src: editImagePreview || editingPhoto.image_url, 
+                    alt: editingPhoto.title 
+                  })}
+                  className="absolute top-2 right-2 w-8 h-8 bg-background/80 text-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
+                  title="Lihat Fullscreen"
+                >
+                  <Eye size={16} />
+                </button>
+                {editImagePreview && (
+                  <div className="absolute bottom-2 left-2 bg-accent text-accent-foreground text-xs px-2 py-1 rounded">
+                    Gambar baru
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Label
+                  htmlFor="edit-image"
+                  className="flex-1 cursor-pointer flex items-center justify-center gap-2 py-2 px-3 border border-dashed border-border rounded-lg hover:bg-muted/50 transition-colors text-sm text-muted-foreground"
+                >
+                  <ImageIcon size={16} />
+                  Ganti Gambar
+                </Label>
+                <Input
+                  id="edit-image"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={(e) => handleEditImageFileChange(e.target.files?.[0] || null)}
+                />
+                {editImagePreview && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditImageFile(null);
+                      setEditImagePreview(null);
+                    }}
+                  >
+                    <X size={14} />
+                    Batal Ganti
+                  </Button>
+                )}
+              </div>
             </div>
           )}
           <div className="space-y-2">
@@ -1938,15 +2092,68 @@ const Admin = () => {
         onClose={closeEditMemberDialog}
       >
         <form onSubmit={handleUpdateMember} className="space-y-4">
-          {editingMember?.photo_url && (
-            <div className="aspect-square w-32 mx-auto rounded-lg overflow-hidden bg-muted">
-              <img
-                src={editingMember.photo_url}
-                alt={editingMember.name}
-                className="w-full h-full object-cover"
-              />
+          <div className="space-y-2">
+            <div className="aspect-square w-32 mx-auto rounded-lg overflow-hidden bg-muted relative group">
+              {(editMemberPhotoPreview || editingMember?.photo_url) ? (
+                <>
+                  <img
+                    src={editMemberPhotoPreview || editingMember?.photo_url || ""}
+                    alt={editingMember?.name || ""}
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImage({ 
+                      src: editMemberPhotoPreview || editingMember?.photo_url || "", 
+                      alt: editingMember?.name || "" 
+                    })}
+                    className="absolute top-1 right-1 w-6 h-6 bg-background/80 text-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
+                    title="Lihat Fullscreen"
+                  >
+                    <Eye size={12} />
+                  </button>
+                  {editMemberPhotoPreview && (
+                    <div className="absolute bottom-1 left-1 bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5 rounded">
+                      Baru
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-muted-foreground">
+                  {editingMember?.name?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
             </div>
-          )}
+            <div className="flex justify-center gap-2">
+              <Label
+                htmlFor="edit-member-photo"
+                className="cursor-pointer flex items-center justify-center gap-2 py-2 px-3 border border-dashed border-border rounded-lg hover:bg-muted/50 transition-colors text-sm text-muted-foreground"
+              >
+                <ImageIcon size={16} />
+                {editingMember?.photo_url || editMemberPhotoPreview ? "Ganti Foto" : "Tambah Foto"}
+              </Label>
+              <Input
+                id="edit-member-photo"
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={(e) => handleEditMemberPhotoChange(e.target.files?.[0] || null)}
+              />
+              {editMemberPhotoPreview && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setEditMemberPhotoFile(null);
+                    setEditMemberPhotoPreview(null);
+                  }}
+                >
+                  <X size={14} />
+                </Button>
+              )}
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="edit-member-name">Nama</Label>
             <Input
@@ -2065,7 +2272,7 @@ const Admin = () => {
           onClose={handleCropperClose}
           onCropComplete={handleCropComplete}
           aspectRatioOptions={
-            cropperType === "gallery"
+            cropperType === "gallery" || cropperType === "edit-gallery"
               ? [
                   { label: "1:1", value: 1 },
                   { label: "4:3", value: 4 / 3 },
@@ -2074,7 +2281,7 @@ const Admin = () => {
                 ]
               : [{ label: "1:1", value: 1 }]
           }
-          defaultAspectRatio={cropperType === "gallery" ? 4 / 3 : 1}
+          defaultAspectRatio={cropperType === "gallery" || cropperType === "edit-gallery" ? 4 / 3 : 1}
         />
       )}
 
