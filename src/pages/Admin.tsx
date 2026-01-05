@@ -11,6 +11,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminModal } from "@/components/AdminModal";
 import { ImageCropper } from "@/components/ImageCropper";
+import { ImagePreview } from "@/components/ImagePreview";
 import {
   LogOut,
   Plus,
@@ -29,6 +30,7 @@ import {
   Crop,
   Settings,
   Construction,
+  Eye,
 } from "lucide-react";
 import {
   Table,
@@ -152,6 +154,9 @@ const Admin = () => {
   const [cropperOpen, setCropperOpen] = useState(false);
   const [cropperImage, setCropperImage] = useState<string | null>(null);
   const [cropperType, setCropperType] = useState<"gallery" | "team">("gallery");
+
+  // Fullscreen image preview state
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -1113,6 +1118,18 @@ const Admin = () => {
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  setPreviewImage({ src: photo.image_url, alt: photo.title });
+                                }}
+                                className="w-8 h-8 bg-background/80 text-foreground rounded-full flex items-center justify-center hover:bg-background"
+                                title="Lihat Fullscreen"
+                              >
+                                <Eye size={16} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   openEditDialog(photo);
                                 }}
                                 className="w-8 h-8 bg-accent text-accent-foreground rounded-full flex items-center justify-center"
@@ -1344,6 +1361,7 @@ const Admin = () => {
                                 member={member}
                                 onEdit={openEditMemberDialog}
                                 onDelete={confirmDeleteMember}
+                                onPreview={(src, alt) => setPreviewImage({ src, alt })}
                               />
                             ))}
                           </div>
@@ -1692,14 +1710,22 @@ const Admin = () => {
                         {photos.map((photo) => (
                           <div
                             key={photo.id}
-                            className="glass-card bg-card overflow-hidden"
+                            className="group glass-card bg-card overflow-hidden"
                           >
-                            <div className="aspect-video">
+                            <div className="aspect-video relative">
                               <img
                                 src={photo.image_url}
                                 alt={photo.title}
                                 className="w-full h-full object-cover"
                               />
+                              <button
+                                type="button"
+                                onClick={() => setPreviewImage({ src: photo.image_url, alt: photo.title })}
+                                className="absolute top-2 right-2 w-8 h-8 bg-background/80 text-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-background"
+                                title="Lihat Fullscreen"
+                              >
+                                <Eye size={16} />
+                              </button>
                             </div>
                             <div className="p-4">
                               <h3 className="font-semibold text-foreground mb-1">
@@ -1844,6 +1870,7 @@ const Admin = () => {
                                   member={member}
                                   onEdit={openEditMemberDialog}
                                   onDelete={confirmDeleteMember}
+                                  onPreview={(src, alt) => setPreviewImage({ src, alt })}
                                 />
                               ))}
                             </div>
@@ -2050,6 +2077,14 @@ const Admin = () => {
           defaultAspectRatio={cropperType === "gallery" ? 4 / 3 : 1}
         />
       )}
+
+      {/* Fullscreen Image Preview */}
+      <ImagePreview
+        imageSrc={previewImage?.src || ""}
+        alt={previewImage?.alt || "Preview"}
+        open={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+      />
 
     </div>
   );
