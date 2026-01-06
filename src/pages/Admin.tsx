@@ -143,6 +143,8 @@ const Admin = () => {
   const [logSearch, setLogSearch] = useState("");
   const [logActionFilter, setLogActionFilter] = useState<string>("all");
   const [logTypeFilter, setLogTypeFilter] = useState<string>("all");
+  const [deleteLogConfirm, setDeleteLogConfirm] = useState<{ id: string; action: string; targetName: string | null } | null>(null);
+  const [deletingLog, setDeletingLog] = useState(false);
 
   // Maintenance mode state
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
@@ -390,6 +392,65 @@ const Admin = () => {
       });
     } catch (error) {
       console.error("Failed to log activity:", error);
+    }
+  };
+
+  const handleDeleteLog = async () => {
+    if (!deleteLogConfirm) return;
+    
+    setDeletingLog(true);
+    try {
+      const { error } = await supabase
+        .from("activity_logs")
+        .delete()
+        .eq("id", deleteLogConfirm.id);
+
+      if (error) throw error;
+
+      setActivityLogs((prev) => prev.filter((log) => log.id !== deleteLogConfirm.id));
+      toast({
+        title: "Log dihapus",
+        description: "Log aktivitas berhasil dihapus",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingLog(false);
+      setDeleteLogConfirm(null);
+    }
+  };
+
+  const handleDeleteAllLogs = async () => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus SEMUA log aktivitas? Tindakan ini tidak dapat dibatalkan.")) {
+      return;
+    }
+
+    setDeletingLog(true);
+    try {
+      const { error } = await supabase
+        .from("activity_logs")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Delete all
+
+      if (error) throw error;
+
+      setActivityLogs([]);
+      toast({
+        title: "Semua log dihapus",
+        description: "Semua log aktivitas berhasil dihapus",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingLog(false);
     }
   };
 
@@ -1487,7 +1548,7 @@ const Admin = () => {
                     Log Aktivitas
                   </h2>
                   
-                  {/* Filters */}
+                  {/* Filters and Delete All */}
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Search */}
                     <div className="relative">
@@ -1545,6 +1606,20 @@ const Admin = () => {
                         </button>
                       ))}
                     </div>
+
+                    {/* Delete All Button */}
+                    {activityLogs.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteAllLogs}
+                        disabled={deletingLog}
+                        className="h-8"
+                      >
+                        <Trash2 size={14} className="mr-1" />
+                        Hapus Semua
+                      </Button>
+                    )}
                   </div>
                 </div>
                 
@@ -1584,6 +1659,7 @@ const Admin = () => {
                                 <TableHead>Aksi</TableHead>
                                 <TableHead>Tipe</TableHead>
                                 <TableHead>Target</TableHead>
+                                <TableHead className="w-12"></TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1621,6 +1697,19 @@ const Admin = () => {
                                   </TableCell>
                                   <TableCell className="max-w-[200px] truncate">
                                     {log.target_name || '-'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <button
+                                      onClick={() => setDeleteLogConfirm({ 
+                                        id: log.id, 
+                                        action: log.action, 
+                                        targetName: log.target_name 
+                                      })}
+                                      className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors"
+                                      title="Hapus log"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -2292,6 +2381,33 @@ const Admin = () => {
         open={!!previewImage}
         onClose={() => setPreviewImage(null)}
       />
+
+      {/* Delete Log Confirmation Modal */}
+      <AdminModal
+        open={!!deleteLogConfirm}
+        title="Hapus Log"
+        description={`Apakah Anda yakin ingin menghapus log aktivitas "${deleteLogConfirm?.action}" untuk "${deleteLogConfirm?.targetName || 'item ini'}"?`}
+        onClose={() => setDeleteLogConfirm(null)}
+      >
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDeleteLogConfirm(null)}
+            disabled={deletingLog}
+          >
+            Batal
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDeleteLog}
+            disabled={deletingLog}
+          >
+            {deletingLog ? "Menghapus..." : "Hapus"}
+          </Button>
+        </div>
+      </AdminModal>
 
     </div>
   );
