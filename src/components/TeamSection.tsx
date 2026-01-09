@@ -145,7 +145,7 @@ const TeamSection = () => {
         {/* More Members Note */}
         <div className="text-center mt-12">
           <p className="text-muted-foreground">
-            Dan <span className="text-accent font-semibold">18+ anggota</span> lainnya yang tidak kalah berdedikasi
+            Dan <span className="text-accent font-semibold">100+ anggota</span> lainnya yang tidak kalah berdedikasi
           </p>
         </div>
       </div>
