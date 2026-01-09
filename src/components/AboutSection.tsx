@@ -92,7 +92,7 @@ const AboutSection = () => {
                 </p>
                 <div className="flex justify-center gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-accent">24+</div>
+                    <div className="text-2xl font-bold text-accent">100+</div>
                     <div className="text-xs text-muted-foreground">Anggota</div>
                   </div>
                   <div className="w-px bg-border" />
