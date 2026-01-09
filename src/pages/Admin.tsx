@@ -155,6 +155,8 @@ const Admin = () => {
   // Delete confirmation state
   const [deletePhotoConfirm, setDeletePhotoConfirm] = useState<{ id: string; imageUrl: string; title: string } | null>(null);
   const [deleteMemberConfirm, setDeleteMemberConfirm] = useState<{ id: string; photoUrl: string | null; name: string } | null>(null);
+  const [deleteUserConfirm, setDeleteUserConfirm] = useState<{ id: string; email: string } | null>(null);
+  const [deletingUser, setDeletingUser] = useState(false);
 
   // Cropper state (separate flow)
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -811,6 +813,40 @@ const Admin = () => {
     }
   };
 
+  // Delete user handler
+  const handleDeleteUser = async () => {
+    if (!deleteUserConfirm || !isAdmin) return;
+
+    setDeletingUser(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { userId: deleteUserConfirm.id },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      await logActivity("delete", "user", deleteUserConfirm.id, deleteUserConfirm.email);
+
+      toast({ 
+        title: "User berhasil dihapus",
+        description: `User ${deleteUserConfirm.email} telah dihapus dari sistem`,
+      });
+      
+      setDeleteUserConfirm(null);
+      fetchProfiles();
+      fetchActivityLogs();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingUser(false);
+    }
+  };
+
   // Team member handlers
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1371,7 +1407,7 @@ const Admin = () => {
                             </div>
                           </div>
                           
-                          {/* Permissions */}
+                          {/* Permissions and Actions */}
                           <div className="flex items-center gap-2 sm:gap-3">
                             <button
                               onClick={() => toggleUploadPermission(profile.id, profile.can_upload)}
@@ -1394,6 +1430,13 @@ const Admin = () => {
                             >
                               <Users size={12} />
                               Tim Inti
+                            </button>
+                            <button
+                              onClick={() => setDeleteUserConfirm({ id: profile.id, email: profile.email || 'Unknown' })}
+                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors"
+                              title="Hapus user"
+                            >
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </div>
@@ -2405,6 +2448,38 @@ const Admin = () => {
             disabled={deletingLog}
           >
             {deletingLog ? "Menghapus..." : "Hapus"}
+          </Button>
+        </div>
+      </AdminModal>
+
+      {/* Delete User Confirmation Modal */}
+      <AdminModal
+        open={!!deleteUserConfirm}
+        title="Hapus User"
+        description={
+          <>
+            Apakah Anda yakin ingin menghapus user "{deleteUserConfirm?.email}"? 
+            Tindakan ini akan menghapus akun secara permanen dan tidak dapat dibatalkan.
+          </>
+        }
+        onClose={() => setDeleteUserConfirm(null)}
+      >
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setDeleteUserConfirm(null)}
+            disabled={deletingUser}
+          >
+            Batal
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDeleteUser}
+            disabled={deletingUser}
+          >
+            {deletingUser ? "Menghapus..." : "Hapus User"}
           </Button>
         </div>
       </AdminModal>
